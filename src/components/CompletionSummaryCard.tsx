@@ -70,11 +70,13 @@ export const CompletionSummaryCard: React.FC<CompletionSummaryCardProps> = ({
           review: book.review,
         }),
       });
-      const data = await res.json();
-      if (data && data.message) {
-        setAiMessage(data.message);
-        if (data.enhanced) {
-          setIsEnhancedBadge(true);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.message) {
+          setAiMessage(data.message);
+          if (data.enhanced) {
+            setIsEnhancedBadge(true);
+          }
         }
       }
     } catch (err) {
