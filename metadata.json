@@ -1,0 +1,6 @@
+{
+  "name": "PagePace - Gamified Reading Archetypes & Tracker",
+  "description": "Gamified book tracking that calculates your Pages Per Day (PPD) and assigns warm, personalized reading archetypes, completion cards, and social story snippets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
