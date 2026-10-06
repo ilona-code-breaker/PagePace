@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { BookEntry, ArchetypeId } from '../types/book';
+import { BookEntry, ArchetypeId, MonthlyGoal } from '../types/book';
 import { ARCHETYPES } from '../constants/archetypes';
+import { DataPortabilityToolbar } from './DataPortabilityToolbar';
 import {
   Search,
   Filter,
@@ -21,16 +22,22 @@ import {
 
 interface BookListProps {
   books: BookEntry[];
+  goals?: Record<string, MonthlyGoal>;
   onSelectBook: (book: BookEntry) => void;
   onDeleteBook: (id: string) => void;
   onAddBookClick: () => void;
+  onDataImported?: (data: { books: BookEntry[]; goals: Record<string, MonthlyGoal> }) => void;
+  onOpenShareCard?: () => void;
 }
 
 export const BookList: React.FC<BookListProps> = ({
   books,
+  goals = {},
   onSelectBook,
   onDeleteBook,
   onAddBookClick,
+  onDataImported,
+  onOpenShareCard,
 }) => {
   const [search, setSearch] = useState('');
   const [filterArchetype, setFilterArchetype] = useState<ArchetypeId | 'all'>('all');
@@ -92,6 +99,40 @@ export const BookList: React.FC<BookListProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Top Utility Bar: Data Portability & Share Card Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-stone-900/60 border border-stone-800 backdrop-blur-sm">
+        <div className="flex items-center gap-2 text-xs text-stone-400">
+          <span className="font-mono uppercase tracking-wider text-stone-400 font-semibold flex items-center gap-1.5">
+            <BookOpen className="w-4 h-4 text-amber-400" />
+            Library State:
+          </span>
+          <span className="font-mono text-stone-200 font-bold">{books.length} Books</span>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Data Portability Controls (Export / Import) */}
+          {onDataImported && (
+            <DataPortabilityToolbar
+              books={books}
+              goals={goals}
+              onDataImported={onDataImported}
+            />
+          )}
+
+          {/* Share Archetype Card CTA */}
+          {onOpenShareCard && (
+            <button
+              type="button"
+              onClick={onOpenShareCard}
+              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition-all shadow-sm active:scale-95"
+            >
+              <Share2 className="w-3.5 h-3.5 text-amber-400" />
+              <span>Share Archetype Card</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Prominent Library Search & Filter Controls Bar */}
       <div className="p-5 rounded-2xl bg-stone-900/80 border border-stone-800 space-y-4 shadow-sm">
         {/* Main Search Bar */}

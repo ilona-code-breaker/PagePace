@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Volume2, VolumeX, Sparkles, Plus, Compass, Target } from 'lucide-react';
+import { BookOpen, Volume2, VolumeX, Sparkles, Plus, Compass, Target, Share2 } from 'lucide-react';
 
 interface NavbarProps {
   currentTab: 'track' | 'library' | 'goals' | 'codex';
@@ -7,6 +7,7 @@ interface NavbarProps {
   soundEnabled: boolean;
   onToggleSound: () => void;
   libraryCount: number;
+  onOpenShareCard?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -15,6 +16,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   soundEnabled,
   onToggleSound,
   libraryCount,
+  onOpenShareCard,
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-stone-800 bg-[#0f1117]/90 backdrop-blur-md">
@@ -122,6 +124,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-400" />
             <span>Codex</span>
           </button>
+
+          {/* Share Archetype Card Button */}
+          {onOpenShareCard && (
+            <button
+              type="button"
+              onClick={onOpenShareCard}
+              className="px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-semibold rounded-xl text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-sm"
+              title="Share your overall Reading Archetype Persona card"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">Share Card</span>
+            </button>
+          )}
 
           {/* Sound Toggle */}
           <button
