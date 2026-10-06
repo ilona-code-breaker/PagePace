@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
 import { MonthlyGoal } from '../types/book';
 import { formatMonthLabel } from '../utils/goalUtils';
-import { Target, BookOpen, Layers, Sparkles, X, Check } from 'lucide-react';
+import {
+  Target,
+  BookOpen,
+  Layers,
+  Sparkles,
+  X,
+  Check,
+  HardDrive,
+  Info,
+  Zap,
+  Compass,
+  Wine,
+  Moon,
+  RotateCcw,
+} from 'lucide-react';
 
 interface GoalEditModalProps {
   goal: MonthlyGoal;
@@ -24,6 +38,18 @@ export const GoalEditModal: React.FC<GoalEditModalProps> = ({
   const bookPresets = [1, 2, 3, 4, 5, 6, 8];
   const pagePresets = [300, 500, 800, 1000, 1200, 1500, 2000];
 
+  const handleApplyArchetypePreset = (
+    type: 'books' | 'pages' | 'both',
+    books: number,
+    pages: number,
+    presetIntention: string
+  ) => {
+    setTargetType(type);
+    setTargetBooks(books);
+    setTargetPages(pages);
+    setIntention(presetIntention);
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
@@ -36,20 +62,20 @@ export const GoalEditModal: React.FC<GoalEditModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-stone-900 border border-stone-800 rounded-2xl shadow-2xl p-6 sm:p-7 space-y-6 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg bg-stone-900 border border-stone-800 rounded-2xl shadow-2xl p-6 sm:p-7 space-y-6 overflow-hidden max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-amber-400 font-semibold">
               <Target className="w-4 h-4" />
-              Monthly Reading Target
+              Device Reading Target
             </div>
             <h3 className="text-xl font-serif font-bold text-stone-100">
-              Set Goal for {formatMonthLabel(monthKey)}
+              Set Your Goal for {formatMonthLabel(monthKey)}
             </h3>
             <p className="text-xs text-stone-400">
-              Choose whether you measure your month by completed volumes, page count, or both.
+              Customize your monthly target to fit your current reading pace and schedule.
             </p>
           </div>
           <button
@@ -59,6 +85,109 @@ export const GoalEditModal: React.FC<GoalEditModalProps> = ({
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Clear MVP Local Storage Notice */}
+        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-xs">
+          <HardDrive className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <span className="font-semibold text-amber-300">
+              MVP Local Storage Notice
+            </span>
+            <p className="text-stone-300 leading-relaxed font-sans">
+              Your goals are saved directly to this device's browser (<code className="text-amber-400 font-mono text-[11px]">localStorage</code>).
+              No login, cloud account, or password required for this MVP.
+            </p>
+          </div>
+        </div>
+
+        {/* Archetype Goal Quick Templates */}
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-stone-300 flex items-center justify-between">
+            <span>Archetype-Aligned Quick Presets</span>
+            <span className="text-[11px] text-stone-500 font-normal">Click to apply template</span>
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                handleApplyArchetypePreset(
+                  'pages',
+                  1,
+                  300,
+                  'Mindful nighttime unwinding & gentle reading'
+                )
+              }
+              className="p-2.5 rounded-xl bg-stone-950 border border-stone-800 hover:border-sky-500/50 text-left transition-colors group"
+            >
+              <div className="flex items-center gap-1.5 text-xs font-bold text-sky-400">
+                <Moon className="w-3.5 h-3.5" /> Bedtime Taster
+              </div>
+              <div className="text-[11px] text-stone-400 mt-0.5 font-mono">
+                300 pages (~10 PPD)
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                handleApplyArchetypePreset(
+                  'both',
+                  2,
+                  700,
+                  'Savoring prose, depth & literary nuance'
+                )
+              }
+              className="p-2.5 rounded-xl bg-stone-950 border border-stone-800 hover:border-purple-500/50 text-left transition-colors group"
+            >
+              <div className="flex items-center gap-1.5 text-xs font-bold text-purple-400">
+                <Wine className="w-3.5 h-3.5" /> Book Sommelier
+              </div>
+              <div className="text-[11px] text-stone-400 mt-0.5 font-mono">
+                2 books · 700 pages
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                handleApplyArchetypePreset(
+                  'both',
+                  3,
+                  1100,
+                  'Daily rhythmic habit & steady momentum'
+                )
+              }
+              className="p-2.5 rounded-xl bg-stone-950 border border-stone-800 hover:border-emerald-500/50 text-left transition-colors group"
+            >
+              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+                <Compass className="w-3.5 h-3.5" /> Steady Cruiser
+              </div>
+              <div className="text-[11px] text-stone-400 mt-0.5 font-mono">
+                3 books · 1,100 pages
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                handleApplyArchetypePreset(
+                  'both',
+                  5,
+                  2000,
+                  'High velocity narrative devouring'
+                )
+              }
+              className="p-2.5 rounded-xl bg-stone-950 border border-stone-800 hover:border-amber-500/50 text-left transition-colors group"
+            >
+              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
+                <Zap className="w-3.5 h-3.5" /> Speed Reader
+              </div>
+              <div className="text-[11px] text-stone-400 mt-0.5 font-mono">
+                5 books · 2,000 pages
+              </div>
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSave} className="space-y-5">
@@ -137,7 +266,7 @@ export const GoalEditModal: React.FC<GoalEditModalProps> = ({
                     className={`text-xs px-2.5 py-1 rounded-md font-mono transition-colors ${
                       targetBooks === num
                         ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
-                        : 'bg-stone-850 text-stone-400 hover:text-stone-200'
+                        : 'bg-stone-800 text-stone-400 hover:text-stone-200'
                     }`}
                   >
                     {num}
@@ -178,7 +307,7 @@ export const GoalEditModal: React.FC<GoalEditModalProps> = ({
                     className={`text-xs px-2 py-1 rounded-md font-mono transition-colors ${
                       targetPages === pg
                         ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
-                        : 'bg-stone-850 text-stone-400 hover:text-stone-200'
+                        : 'bg-stone-800 text-stone-400 hover:text-stone-200'
                     }`}
                   >
                     {pg}
@@ -204,21 +333,36 @@ export const GoalEditModal: React.FC<GoalEditModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-800">
+          <div className="flex items-center justify-between pt-3 border-t border-stone-800">
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition-colors"
+              onClick={() => {
+                setTargetType('both');
+                setTargetBooks(3);
+                setTargetPages(1000);
+                setIntention('Consistent daily reading & joyful book exploration');
+              }}
+              className="text-xs text-stone-500 hover:text-stone-300 flex items-center gap-1"
             >
-              Cancel
+              <RotateCcw className="w-3 h-3" /> Reset Defaults
             </button>
-            <button
-              type="submit"
-              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm transition-all shadow-md active:scale-95"
-            >
-              <Check className="w-4 h-4" />
-              Save Monthly Goal
-            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm transition-all shadow-md active:scale-95"
+              >
+                <Check className="w-4 h-4" />
+                Save Goal to Device
+              </button>
+            </div>
           </div>
         </form>
       </div>

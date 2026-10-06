@@ -26,6 +26,10 @@ import {
   CheckCircle2,
   AlertCircle,
   TrendingUp,
+  HardDrive,
+  Download,
+  Info,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface MonthlyGoalTrackerProps {
@@ -83,6 +87,25 @@ export const MonthlyGoalTracker: React.FC<MonthlyGoalTrackerProps> = ({
     }
   };
 
+  const handleExportDeviceData = () => {
+    const payload = {
+      app: 'PagePace',
+      version: '1.0-MVP',
+      exportedAt: new Date().toISOString(),
+      books,
+      goals,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pagepace-device-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const getPaceStatusBadge = () => {
     switch (progress.paceStatus) {
       case 'completed':
@@ -123,7 +146,49 @@ export const MonthlyGoalTracker: React.FC<MonthlyGoalTrackerProps> = ({
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-200">
+    <div className="space-y-6 animate-in fade-in duration-200">
+      {/* MVP Device Storage Notification Banner */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs shadow-sm">
+        <div className="flex items-start sm:items-center gap-3">
+          <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0 mt-0.5 sm:mt-0">
+            <HardDrive className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-amber-300">
+                MVP Local Storage Notice
+              </span>
+              <span className="text-[10px] font-mono text-stone-400 bg-stone-900 px-1.5 py-0.2 rounded border border-stone-800">
+                Client-Side MVP
+              </span>
+            </div>
+            <p className="text-stone-300 mt-0.5 leading-relaxed font-sans">
+              Your reading goals, velocity history, and archetype records are stored securely on this device's browser (<code className="text-amber-400 font-mono text-[11px]">localStorage</code>). No cloud account or login required.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <button
+            type="button"
+            onClick={handleExportDeviceData}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-300 border border-stone-750 text-xs font-medium transition-colors"
+            title="Download a backup copy of your reading goals and books"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Backup JSON
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsEditingGoal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs transition-all shadow-sm active:scale-95"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            Set Device Goal
+          </button>
+        </div>
+      </div>
+
       {/* Month Navigation & Target Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-stone-900/70 border border-stone-800 backdrop-blur-sm">
         {/* Month Selector Buttons */}
@@ -218,7 +283,7 @@ export const MonthlyGoalTracker: React.FC<MonthlyGoalTrackerProps> = ({
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs sm:text-sm font-semibold transition-colors"
           >
             <Edit3 className="w-3.5 h-3.5" />
-            Edit Goal
+            Edit Device Goal
           </button>
         </div>
       </div>
@@ -240,6 +305,9 @@ export const MonthlyGoalTracker: React.FC<MonthlyGoalTrackerProps> = ({
               <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-stone-400">
                 <Target className="w-4 h-4 text-amber-400" />
                 Monthly Target Fulfillment
+                <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 font-semibold">
+                  Device Local
+                </span>
               </div>
               <h3 className="text-xl sm:text-2xl font-serif font-bold text-stone-100 mt-1">
                 Progress Overview
@@ -277,7 +345,7 @@ export const MonthlyGoalTracker: React.FC<MonthlyGoalTrackerProps> = ({
                   <span>0 books</span>
                   <span>
                     {progress.booksRead >= progress.targetBooks
-                      ? 'Goal achieved!'
+                      ? 'Goal achieved on device!'
                       : `${progress.targetBooks - progress.booksRead} book${progress.targetBooks - progress.booksRead === 1 ? '' : 's'} remaining`}
                   </span>
                   <span>{progress.targetBooks} books</span>
@@ -312,7 +380,7 @@ export const MonthlyGoalTracker: React.FC<MonthlyGoalTrackerProps> = ({
                   <span>0 pages</span>
                   <span>
                     {progress.pagesRead >= progress.targetPages
-                      ? 'Target surpassed!'
+                      ? 'Target surpassed on device!'
                       : `${(progress.targetPages - progress.pagesRead).toLocaleString()} pages remaining`}
                   </span>
                   <span>{progress.targetPages.toLocaleString()} pages</span>
@@ -461,30 +529,43 @@ export const MonthlyGoalTracker: React.FC<MonthlyGoalTrackerProps> = ({
                 <div
                   key={book.id}
                   onClick={() => onSelectBook(book)}
-                  className="p-4 rounded-xl bg-stone-900/80 border border-stone-800 hover:border-stone-700 hover:bg-stone-900 transition-all cursor-pointer space-y-2.5 group shadow-sm"
+                  className="p-4 rounded-xl bg-stone-900/80 border border-stone-800 hover:border-stone-700 hover:bg-stone-900 transition-all cursor-pointer space-y-2.5 group shadow-sm flex items-start gap-3.5"
                 >
-                  <div className="flex items-center justify-between text-xs text-stone-400">
-                    <span className="font-semibold text-stone-300 flex items-center gap-1">
-                      {arch.badgeEmoji} {arch.shortName}
-                    </span>
-                    <span className="font-mono text-amber-400 font-bold">
-                      ★ {book.rating.toFixed(1)}
-                    </span>
-                  </div>
+                  {book.coverUrl ? (
+                    <img
+                      src={book.coverUrl}
+                      alt={book.title}
+                      className="w-11 h-16 object-cover rounded-lg shadow-md border border-stone-700 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-11 h-16 bg-stone-950 rounded-lg border border-stone-800 flex items-center justify-center shrink-0 text-stone-500">
+                      <BookOpen className="w-5 h-5" />
+                    </div>
+                  )}
 
-                  <div>
-                    <h5 className="font-serif font-bold text-stone-100 group-hover:text-amber-300 transition-colors line-clamp-1">
-                      {book.title}
-                    </h5>
-                    {book.author && (
-                      <p className="text-xs text-stone-400 mt-0.5">by {book.author}</p>
-                    )}
-                  </div>
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs text-stone-400">
+                      <span className="font-semibold text-stone-300 flex items-center gap-1">
+                        {arch.badgeEmoji} {arch.shortName}
+                      </span>
+                      <span className="font-mono text-amber-400 font-bold">
+                        ★ {book.rating.toFixed(1)}
+                      </span>
+                    </div>
 
-                  <div className="pt-2 border-t border-stone-800/80 flex items-center justify-between text-[11px] text-stone-400 font-mono">
-                    <span>{book.totalPages} pages</span>
-                    <span>{book.ppd.toFixed(1)} PPD</span>
-                    <span className="text-stone-500">{book.finishDate}</span>
+                    <div>
+                      <h5 className="font-serif font-bold text-stone-100 group-hover:text-amber-300 transition-colors line-clamp-1 text-sm">
+                        {book.title}
+                      </h5>
+                      {book.author && (
+                        <p className="text-xs text-stone-400 mt-0.5 line-clamp-1">by {book.author}</p>
+                      )}
+                    </div>
+
+                    <div className="pt-1.5 border-t border-stone-800/80 flex items-center justify-between text-[11px] text-stone-400 font-mono">
+                      <span>{book.totalPages} pages</span>
+                      <span>{book.ppd.toFixed(1)} PPD</span>
+                    </div>
                   </div>
                 </div>
               );

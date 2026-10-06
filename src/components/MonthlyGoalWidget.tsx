@@ -1,7 +1,7 @@
 import React from 'react';
 import { BookEntry, MonthlyGoal } from '../types/book';
 import { calculateMonthProgress, getCurrentMonthKey } from '../utils/goalUtils';
-import { Target, BookOpen, Layers, ArrowRight, Trophy } from 'lucide-react';
+import { Target, BookOpen, Layers, ArrowRight, Trophy, HardDrive } from 'lucide-react';
 
 interface MonthlyGoalWidgetProps {
   books: BookEntry[];
@@ -42,6 +42,9 @@ export const MonthlyGoalWidget: React.FC<MonthlyGoalWidgetProps> = ({
             <span className="text-xs font-mono uppercase tracking-wider text-stone-400 font-semibold">
               {progress.monthLabel} Reading Goal
             </span>
+            <span className="text-[10px] font-mono text-stone-400 bg-stone-950 px-1.5 py-0.2 rounded border border-stone-800">
+              On Device
+            </span>
             {progress.isGoalMet && (
               <span className="text-[10px] font-mono font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/30">
                 Goal Met 🏆
@@ -73,7 +76,7 @@ export const MonthlyGoalWidget: React.FC<MonthlyGoalWidgetProps> = ({
           />
         </div>
         <span className="text-xs text-amber-400 group-hover:translate-x-0.5 transition-transform flex items-center font-medium">
-          View <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
+          Edit Goal <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
         </span>
       </div>
     </div>
