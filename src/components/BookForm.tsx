@@ -5,7 +5,7 @@ import {
   calculateElapsedDays,
   calculatePPD,
   getArchetypeByPPD,
-  snapToPrecision02,
+  snapToPrecision01,
 } from '../utils/calculator';
 import { generateArchetypeCelebration } from '../utils/celebrationGenerator';
 import { RatingInput } from './RatingInput';
@@ -247,7 +247,7 @@ export const BookForm: React.FC<BookFormProps> = ({
       elapsedDays,
       ppd: livePpd,
       archetypeId: liveArchetype.id,
-      rating: snapToPrecision02(rating),
+      rating: snapToPrecision01(rating),
       review: review.trim(),
     });
 
@@ -261,7 +261,7 @@ export const BookForm: React.FC<BookFormProps> = ({
       elapsedDays,
       ppd: livePpd,
       archetypeId: liveArchetype.id,
-      rating: snapToPrecision02(rating),
+      rating: snapToPrecision01(rating),
       review: review.trim(),
       genre,
       format,
@@ -585,11 +585,11 @@ export const BookForm: React.FC<BookFormProps> = ({
         </div>
       </div>
 
-      {/* Rating Scale: 0.2 Precision */}
+      {/* Rating Scale: 0.1 Precision */}
       <RatingInput
         value={rating}
         onChange={setRating}
-        label="Your Rating (Fine-Tuned 0.2 Precision)"
+        label="Your Rating (Fine-Tuned 0.1 Precision)"
       />
 
       {/* Format & Genre row */}

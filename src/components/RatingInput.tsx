@@ -1,9 +1,9 @@
 import React from 'react';
 import { Star, Minus, Plus } from 'lucide-react';
-import { snapToPrecision02, getRatingDescriptor } from '../utils/calculator';
+import { snapToPrecision01, getRatingDescriptor } from '../utils/calculator';
 
 interface RatingInputProps {
-  value: number; // 0.2 to 5.0 in 0.2 steps
+  value: number; // 0.1 to 5.0 in 0.1 steps
   onChange: (val: number) => void;
   label?: string;
 }
@@ -11,16 +11,16 @@ interface RatingInputProps {
 export const RatingInput: React.FC<RatingInputProps> = ({
   value,
   onChange,
-  label = 'Rating (0.2 Precision)',
+  label = 'Rating (0.1 Precision)',
 }) => {
-  const safeVal = snapToPrecision02(value);
+  const safeVal = snapToPrecision01(value);
 
   const handleStep = (delta: number) => {
-    const next = snapToPrecision02(safeVal + delta);
+    const next = snapToPrecision01(safeVal + delta);
     onChange(next);
   };
 
-  const presets = [3.0, 3.6, 4.0, 4.4, 4.8, 5.0];
+  const presets = [3.0, 3.5, 4.0, 4.3, 4.7, 5.0];
 
   return (
     <div className="space-y-2">
@@ -35,10 +35,10 @@ export const RatingInput: React.FC<RatingInputProps> = ({
       <div className="flex flex-wrap items-center gap-3 p-3 bg-stone-900/80 border border-stone-800 rounded-xl">
         <button
           type="button"
-          onClick={() => handleStep(-0.2)}
-          disabled={safeVal <= 0.2}
+          onClick={() => handleStep(-0.1)}
+          disabled={safeVal <= 0.1}
           className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          title="Decrease by 0.2"
+          title="Decrease by 0.1"
         >
           <Minus className="w-4 h-4" />
         </button>
@@ -57,9 +57,9 @@ export const RatingInput: React.FC<RatingInputProps> = ({
                   const rect = e.currentTarget.getBoundingClientRect();
                   const clickX = e.clientX - rect.left;
                   const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-                  // Snap to nearest 0.2 in this star's bracket
+                  // Snap to nearest 0.1 in this star's bracket
                   const rawInStar = (starIndex - 1) + ratio;
-                  onChange(snapToPrecision02(rawInStar));
+                  onChange(snapToPrecision01(rawInStar));
                 }}
                 title={`Click star ${starIndex} to set rating`}
               >
@@ -80,10 +80,10 @@ export const RatingInput: React.FC<RatingInputProps> = ({
 
         <button
           type="button"
-          onClick={() => handleStep(0.2)}
+          onClick={() => handleStep(0.1)}
           disabled={safeVal >= 5.0}
           className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          title="Increase by 0.2"
+          title="Increase by 0.1"
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -98,11 +98,11 @@ export const RatingInput: React.FC<RatingInputProps> = ({
       <div className="space-y-2 pt-1">
         <input
           type="range"
-          min="0.2"
+          min="0.1"
           max="5.0"
-          step="0.2"
+          step="0.1"
           value={safeVal}
-          onChange={(e) => onChange(snapToPrecision02(parseFloat(e.target.value)))}
+          onChange={(e) => onChange(snapToPrecision01(parseFloat(e.target.value)))}
           className="w-full accent-amber-500 cursor-pointer h-1.5 bg-stone-800 rounded-lg appearance-none"
         />
 

@@ -29,7 +29,7 @@ export interface BookEntry {
   elapsedDays: number;
   ppd: number;
   archetypeId: ArchetypeId;
-  rating: number; // 0.2 precision (e.g. 0.2 to 5.0)
+  rating: number; // 0.1 precision (e.g. 0.1 to 5.0)
   review: string;
   genre?: string;
   format?: 'Physical' | 'E-Reader' | 'Audiobook' | 'Hybrid';

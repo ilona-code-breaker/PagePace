@@ -177,7 +177,7 @@ A reader just finished a book with the following stats:
 - Reading Duration: ${elapsedDays} day(s)
 - Reading Velocity: ${ppd} Pages Per Day (PPD)
 - Assigned Reader Archetype: ${archetype}
-- Reader Rating: ${rating} / 5.0 (0.2 precision scale)
+- Reader Rating: ${rating} / 5.0 (0.1 precision scale)
 - Reader Review / Thoughts: "${review || 'No written notes.'}"
 
 Generate a short, warm, and highly personalized celebration message (2-3 punchy sentences) that:

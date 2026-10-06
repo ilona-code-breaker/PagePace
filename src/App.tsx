@@ -285,8 +285,8 @@ export default function App() {
                     </div>
 
                     <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-1">
-                      <div className="font-mono text-stone-300 font-medium">0.2 Precision Rating Scale:</div>
-                      <span className="text-stone-300">Supports fine increments (e.g. 3.2, 4.4, 4.8, 5.0) for book connoisseurs.</span>
+                      <div className="font-mono text-stone-300 font-medium">0.1 Precision Rating Scale:</div>
+                      <span className="text-stone-300">Supports fine increments (e.g. 3.7, 4.3, 4.8, 5.0) for book connoisseurs.</span>
                     </div>
                   </div>
                 </div>

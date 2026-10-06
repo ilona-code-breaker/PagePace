@@ -57,16 +57,18 @@ export function getArchetypeByPPD(ppd: number): ArchetypeDefinition {
 }
 
 /**
- * Rounds and formats a rating into 0.2 precision (e.g. 0.2, 0.4, ... 4.8, 5.0)
+ * Rounds and formats a rating into 0.1 precision (e.g. 0.1, 0.2, ... 4.9, 5.0)
  */
-export function snapToPrecision02(val: number): number {
-  const clamped = Math.min(5.0, Math.max(0.2, val));
-  const rounded = Math.round(clamped * 5) / 5; // Multiplies by 5, rounds, divides by 5 -> steps of 0.2
-  return Math.round(rounded * 10) / 10;
+export function snapToPrecision01(val: number): number {
+  const clamped = Math.min(5.0, Math.max(0.1, val));
+  return Math.round(clamped * 10) / 10;
 }
 
+// Alias for backwards compatibility
+export const snapToPrecision02 = snapToPrecision01;
+
 export function formatRating(val: number): string {
-  const snapped = snapToPrecision02(val);
+  const snapped = snapToPrecision01(val);
   return snapped.toFixed(1);
 }
 
