@@ -191,6 +191,70 @@ export function cleanTitleString(title: string): string {
 }
 
 /**
+ * Normalizes and standardizes genres to clean title case.
+ */
+export function normalizeStandardGenre(genre: string): string {
+  const g = genre.trim();
+  const lower = g.toLowerCase();
+  if (lower === 'scifi' || lower === 'sci-fi' || lower === 'science fiction' || lower === 'science-fiction') {
+    return 'Sci-Fi';
+  }
+  if (lower === 'nonfiction' || lower === 'non-fiction') return 'Non-Fiction';
+  if (lower === 'historical-fiction' || lower === 'historical fiction') return 'Historical Fiction';
+  if (lower === 'ya dystopian' || lower === 'dystopian' || lower === 'dystopia') return 'YA Dystopian';
+  if (lower === 'lit fic' || lower === 'literary' || lower === 'literary fiction') return 'Literary Fiction';
+  if (lower === 'romance' || lower === 'romantasy') return 'Romance';
+  if (lower === 'fantasy') return 'Fantasy';
+  if (lower === 'thriller' || lower === 'mystery' || lower === 'crime') return 'Thriller';
+  if (lower === 'horror') return 'Horror';
+  if (lower === 'classics' || lower === 'classic') return 'Classics';
+  if (lower === 'young adult' || lower === 'ya') return 'Young Adult';
+
+  // Capitalize first letter
+  return g.charAt(0).toUpperCase() + g.slice(1);
+}
+
+/**
+ * Checks incoming books against the built-in knowledge base and bookshelf tags
+ * to verify and populate standard genre tags (e.g. 'Fantasy', 'Sci-Fi', 'Romance').
+ */
+export function verifyAndPopulateGenre(
+  title: string,
+  author?: string,
+  rawGenreField?: string,
+  rawShelf?: string
+): string {
+  // 1. Check internal knowledge base for verified match
+  const kbMatch = findExactOrBestMatch(title);
+  if (kbMatch && kbMatch.genre) {
+    return normalizeStandardGenre(kbMatch.genre);
+  }
+
+  // 2. Parse raw genre / bookshelf string (e.g. Goodreads bookshelves: "fantasy, favorites, ya-fantasy")
+  const combinedText = `${rawGenreField || ''} ${rawShelf || ''}`.toLowerCase();
+
+  if (combinedText.includes('romantasy')) return 'Romance';
+  if (combinedText.includes('sci-fi') || combinedText.includes('scifi') || combinedText.includes('science fiction') || combinedText.includes('space opera')) return 'Sci-Fi';
+  if (combinedText.includes('fantasy') || combinedText.includes('magic')) return 'Fantasy';
+  if (combinedText.includes('romance') || combinedText.includes('contemporary-romance')) return 'Romance';
+  if (combinedText.includes('thriller') || combinedText.includes('mystery') || combinedText.includes('crime') || combinedText.includes('suspense')) return 'Thriller';
+  if (combinedText.includes('horror')) return 'Horror';
+  if (combinedText.includes('dystopia') || combinedText.includes('dystopian')) return 'YA Dystopian';
+  if (combinedText.includes('historical fiction') || combinedText.includes('historical')) return 'Historical Fiction';
+  if (combinedText.includes('non-fiction') || combinedText.includes('nonfiction') || combinedText.includes('biography') || combinedText.includes('memoir') || combinedText.includes('self-help')) return 'Non-Fiction';
+  if (combinedText.includes('classic') || combinedText.includes('classics')) return 'Classics';
+  if (combinedText.includes('literary') || combinedText.includes('lit-fic')) return 'Literary Fiction';
+  if (combinedText.includes('young adult') || combinedText.includes('ya')) return 'Young Adult';
+
+  // 3. Fallback to clean raw string if specified, or 'Fiction'
+  if (rawGenreField && rawGenreField.trim()) {
+    return normalizeStandardGenre(rawGenreField.trim());
+  }
+
+  return 'Fiction';
+}
+
+/**
  * Analyzes and normalizes parsed CSV table into PagePace records.
  */
 export function analyzeAndNormalizeCsv(
@@ -238,6 +302,7 @@ export function analyzeAndNormalizeCsv(
   const shelfIdx = findCol(['exclusive shelf', 'shelf', 'bookshelves', 'status', 'read status']);
   const dateReadIdx = findCol(['date read', 'date_read', 'date finished', 'read at', 'finish date', 'completed']);
   const dateAddedIdx = findCol(['date added', 'date_added', 'added at', 'start date', 'date started', 'created']);
+  const genreColIdx = findCol(['genre', 'genres', 'bookshelves', 'bookshelves with positions', 'tags', 'subject', 'category']);
   const ratingIdx = findCol(['my rating', 'rating', 'star rating', 'user rating', 'stars']);
   const reviewIdx = findCol(['my review', 'review', 'notes', 'private notes', 'comments']);
   const publisherIdx = findCol(['publisher']);
@@ -291,24 +356,32 @@ export function analyzeAndNormalizeCsv(
     let rawPages = pagesIdx !== -1 ? parseInt(row[pagesIdx], 10) : 0;
     let totalPages = !isNaN(rawPages) && rawPages > 0 ? rawPages : 0;
     let hasAutoFilledPages = false;
-    let genre = 'Fiction';
+
+    // Genre verification & normalization
+    const rawGenreVal = genreColIdx !== -1 ? row[genreColIdx] : undefined;
+    const rawShelfVal = shelfIdx !== -1 ? row[shelfIdx] : undefined;
+    let genre = verifyAndPopulateGenre(title, author, rawGenreVal, rawShelfVal);
 
     // Auto-fill page count fallback via local knowledge base if 0
     if (totalPages <= 0) {
       const match = findExactOrBestMatch(title);
       if (match && match.totalPages > 0) {
         totalPages = match.totalPages;
-        genre = match.genre;
+        if (match.genre) {
+          genre = normalizeStandardGenre(match.genre);
+        }
         hasAutoFilledPages = true;
       } else {
         totalPages = options.defaultPageCountFallback || 350;
         missingPagesCount++;
       }
     } else {
-      // Find genre from knowledge base if possible
-      const match = findExactOrBestMatch(title);
-      if (match?.genre) {
-        genre = match.genre;
+      // Find verified genre from knowledge base if genre was generic 'Fiction'
+      if (genre === 'Fiction') {
+        const match = findExactOrBestMatch(title);
+        if (match?.genre) {
+          genre = normalizeStandardGenre(match.genre);
+        }
       }
     }
 

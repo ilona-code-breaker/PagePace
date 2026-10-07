@@ -144,6 +144,15 @@ export default function App() {
     }
   };
 
+  const handleEditBook = (updatedBook: BookEntry) => {
+    setBooks((prev) =>
+      prev.map((b) => (b.id === updatedBook.id ? updatedBook : b))
+    );
+    if (selectedBook?.id === updatedBook.id) {
+      setSelectedBook(updatedBook);
+    }
+  };
+
   const handleDataImported = (imported: {
     books: BookEntry[];
     goals: Record<string, MonthlyGoal>;
@@ -460,6 +469,7 @@ export default function App() {
               onAddBookClick={() => setCurrentTab('track')}
               onDataImported={handleDataImported}
               onOpenShareCard={() => setIsShareCardOpen(true)}
+              onEditBook={handleEditBook}
             />
           </div>
         )}

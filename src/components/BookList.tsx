@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { BookEntry, ArchetypeId, MonthlyGoal } from '../types/book';
 import { ARCHETYPES } from '../constants/archetypes';
 import { DataPortabilityToolbar } from './DataPortabilityToolbar';
+import { GenrePieChart } from './GenrePieChart';
+import { EditBookModal } from './EditBookModal';
 import {
   Search,
   Filter,
@@ -18,6 +20,10 @@ import {
   Share2,
   X,
   Sparkles,
+  Edit3,
+  PieChart as PieChartIcon,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface BookListProps {
@@ -28,6 +34,7 @@ interface BookListProps {
   onAddBookClick: () => void;
   onDataImported?: (data: { books: BookEntry[]; goals: Record<string, MonthlyGoal> }) => void;
   onOpenShareCard?: () => void;
+  onEditBook?: (updatedBook: BookEntry) => void;
 }
 
 export const BookList: React.FC<BookListProps> = ({
@@ -38,10 +45,13 @@ export const BookList: React.FC<BookListProps> = ({
   onAddBookClick,
   onDataImported,
   onOpenShareCard,
+  onEditBook,
 }) => {
   const [search, setSearch] = useState('');
   const [filterArchetype, setFilterArchetype] = useState<ArchetypeId | 'all'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'ppd' | 'rating'>('date');
+  const [showGenreChart, setShowGenreChart] = useState(true);
+  const [editingBook, setEditingBook] = useState<BookEntry | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -107,10 +117,19 @@ export const BookList: React.FC<BookListProps> = ({
             Library State:
           </span>
           <span className="font-mono text-stone-200 font-bold">{books.length} Books</span>
+          <button
+            type="button"
+            onClick={() => setShowGenreChart((prev) => !prev)}
+            className="ml-2 px-2.5 py-1 rounded-lg bg-stone-800/80 hover:bg-stone-800 text-stone-300 text-xs font-mono flex items-center gap-1.5 transition-colors"
+          >
+            <PieChartIcon className="w-3.5 h-3.5 text-pink-400" />
+            <span>{showGenreChart ? 'Hide Genre Chart' : 'Show Genre Chart'}</span>
+            {showGenreChart ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Data Portability Controls (Export / Import) */}
+          {/* Data Portability Controls (Export / Import JSON & CSV) */}
           {onDataImported && (
             <DataPortabilityToolbar
               books={books}
@@ -132,6 +151,11 @@ export const BookList: React.FC<BookListProps> = ({
           )}
         </div>
       </div>
+
+      {/* 1. Recharts Genre Pie Chart Component */}
+      {showGenreChart && (
+        <GenrePieChart books={books} />
+      )}
 
       {/* Prominent Library Search & Filter Controls Bar */}
       <div className="p-5 rounded-2xl bg-stone-900/80 border border-stone-800 space-y-4 shadow-sm">
@@ -303,7 +327,7 @@ export const BookList: React.FC<BookListProps> = ({
                 onClick={() => onSelectBook(book)}
                 className="group p-5 rounded-2xl bg-stone-900/80 border border-stone-800 hover:border-stone-700 hover:bg-stone-900 transition-all cursor-pointer space-y-3 relative shadow-md"
               >
-                {/* Unboxed Header Metadata per Frontend Design Guidelines */}
+                {/* Header Metadata */}
                 <div className="flex items-center justify-between text-xs text-stone-400">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-stone-300 flex items-center gap-1.5">
@@ -312,6 +336,14 @@ export const BookList: React.FC<BookListProps> = ({
                     </span>
                     <span aria-hidden="true">·</span>
                     <span className="font-mono">{book.ppd.toFixed(1)} PPD</span>
+                    {book.genre && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span className="text-[11px] font-mono text-stone-400 px-1.5 py-0.2 rounded bg-stone-950 border border-stone-800">
+                          {book.genre}
+                        </span>
+                      </>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-1.5 text-stone-400">
@@ -358,15 +390,30 @@ export const BookList: React.FC<BookListProps> = ({
                   </p>
                 )}
 
-                {/* Card Footer */}
+                {/* Card Footer with In-App Edit Button */}
                 <div className="pt-2 border-t border-stone-800/80 flex items-center justify-between text-[11px] text-stone-500">
                   <span>
                     {book.totalPages} pages · {book.elapsedDays} {book.elapsedDays === 1 ? 'day' : 'days'}
                   </span>
                   <div className="flex items-center gap-2">
+                    {/* In-App Edit Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingBook(book);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-750 text-stone-300 hover:text-amber-300 text-xs font-medium transition-colors flex items-center gap-1 border border-stone-750"
+                      title="Edit book details"
+                    >
+                      <Edit3 className="w-3 h-3 text-amber-400" />
+                      <span>Edit</span>
+                    </button>
+
                     <span className="text-amber-400 group-hover:underline font-medium">
-                      View Certificate →
+                      Certificate →
                     </span>
+
                     <button
                       type="button"
                       onClick={(e) => {
@@ -384,6 +431,19 @@ export const BookList: React.FC<BookListProps> = ({
             );
           })}
         </div>
+      )}
+
+      {/* In-App Book Edit Modal */}
+      {editingBook && (
+        <EditBookModal
+          book={editingBook}
+          isOpen={!!editingBook}
+          onClose={() => setEditingBook(null)}
+          onSave={(updated) => {
+            onEditBook?.(updated);
+            setEditingBook(null);
+          }}
+        />
       )}
     </div>
   );
