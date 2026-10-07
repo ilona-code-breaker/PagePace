@@ -13,6 +13,8 @@ import { ArchetypeCodex } from './components/ArchetypeCodex';
 import { CompletionSummaryCard } from './components/CompletionSummaryCard';
 import { MonthlyGoalTracker } from './components/MonthlyGoalTracker';
 import { MonthlyGoalWidget } from './components/MonthlyGoalWidget';
+import { ShareableArchetypeCardModal } from './components/ShareableArchetypeCardModal';
+import { DataPortabilityToolbar } from './components/DataPortabilityToolbar';
 import { getCurrentMonthKey } from './utils/goalUtils';
 import {
   Sparkles,
@@ -23,6 +25,7 @@ import {
   ArrowRight,
   BookOpen,
   Award,
+  Share2,
 } from 'lucide-react';
 
 const STORAGE_KEY = 'pagepace_books_v1';
@@ -88,6 +91,8 @@ export default function App() {
     return INITIAL_SAMPLE_BOOKS[0] || null;
   });
 
+  const [isShareCardOpen, setIsShareCardOpen] = useState<boolean>(false);
+
   // Save books to localStorage
   useEffect(() => {
     try {
@@ -136,6 +141,27 @@ export default function App() {
     }
   };
 
+  const handleDataImported = (imported: {
+    books: BookEntry[];
+    goals: Record<string, MonthlyGoal>;
+  }) => {
+    setBooks(imported.books);
+    if (imported.goals && Object.keys(imported.goals).length > 0) {
+      setGoals(imported.goals);
+    }
+    if (imported.books.length > 0) {
+      setSelectedBook(imported.books[0]);
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(imported.books));
+      if (imported.goals && Object.keys(imported.goals).length > 0) {
+        localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(imported.goals));
+      }
+    } catch {
+      // Ignore
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0f1117] text-stone-100 flex flex-col font-sans">
       <Navbar
@@ -146,71 +172,89 @@ export default function App() {
         soundEnabled={soundEnabled}
         onToggleSound={() => setSoundEnabled((prev) => !prev)}
         libraryCount={books.length}
+        onOpenShareCard={() => setIsShareCardOpen(true)}
       />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-10">
-        {/* Archetype Quick Tier Bar */}
-        <section aria-label="Reading Archetypes Overview" className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
-          <div
-            onClick={() => setCurrentTab('codex')}
-            className="p-3 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-amber-500/40 transition-colors cursor-pointer group flex items-center gap-3"
-          >
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
-              <Zap className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">80+ PPD</div>
-              <div className="text-xs font-bold text-stone-200 truncate group-hover:text-amber-300">
-                Speed Reader
+        {/* Archetype Quick Tier Bar & Persona Action */}
+        <div className="space-y-3">
+          <section aria-label="Reading Archetypes Overview" className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
+            <div
+              onClick={() => setCurrentTab('codex')}
+              className="p-3 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-amber-500/40 transition-colors cursor-pointer group flex items-center gap-3"
+            >
+              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
+                <Zap className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">80+ PPD</div>
+                <div className="text-xs font-bold text-stone-200 truncate group-hover:text-amber-300">
+                  Speed Reader
+                </div>
               </div>
             </div>
-          </div>
 
-          <div
-            onClick={() => setCurrentTab('codex')}
-            className="p-3 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-emerald-500/40 transition-colors cursor-pointer group flex items-center gap-3"
-          >
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
-              <Compass className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">40–79 PPD</div>
-              <div className="text-xs font-bold text-stone-200 truncate group-hover:text-emerald-300">
-                Steady Cruiser
+            <div
+              onClick={() => setCurrentTab('codex')}
+              className="p-3 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-emerald-500/40 transition-colors cursor-pointer group flex items-center gap-3"
+            >
+              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
+                <Compass className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">40–79 PPD</div>
+                <div className="text-xs font-bold text-stone-200 truncate group-hover:text-emerald-300">
+                  Steady Cruiser
+                </div>
               </div>
             </div>
-          </div>
 
-          <div
-            onClick={() => setCurrentTab('codex')}
-            className="p-3 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-purple-500/40 transition-colors cursor-pointer group flex items-center gap-3"
-          >
-            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
-              <Wine className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">15–39 PPD</div>
-              <div className="text-xs font-bold text-stone-200 truncate group-hover:text-purple-300">
-                Book Sommelier
+            <div
+              onClick={() => setCurrentTab('codex')}
+              className="p-3 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-purple-500/40 transition-colors cursor-pointer group flex items-center gap-3"
+            >
+              <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
+                <Wine className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">15–39 PPD</div>
+                <div className="text-xs font-bold text-stone-200 truncate group-hover:text-purple-300">
+                  Book Sommelier
+                </div>
               </div>
             </div>
-          </div>
 
-          <div
-            onClick={() => setCurrentTab('codex')}
-            className="p-3 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-sky-500/40 transition-colors cursor-pointer group flex items-center gap-3"
-          >
-            <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400 group-hover:scale-110 transition-transform">
-              <Moon className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">&lt; 15 PPD</div>
-              <div className="text-xs font-bold text-stone-200 truncate group-hover:text-sky-300">
-                Bedtime Taster
+            <div
+              onClick={() => setCurrentTab('codex')}
+              className="p-3 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-sky-500/40 transition-colors cursor-pointer group flex items-center gap-3"
+            >
+              <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400 group-hover:scale-110 transition-transform">
+                <Moon className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">&lt; 15 PPD</div>
+                <div className="text-xs font-bold text-stone-200 truncate group-hover:text-sky-300">
+                  Bedtime Taster
+                </div>
               </div>
             </div>
+          </section>
+
+          {/* Quick Action Pill: Share Archetype Card */}
+          <div className="flex items-center justify-between text-xs text-stone-400 px-1">
+            <span className="text-[11px] font-mono text-stone-500 uppercase tracking-wider">
+              Calculates Dynamic Pace & Archetype
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsShareCardOpen(true)}
+              className="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1.5 transition-colors group"
+            >
+              <Share2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+              <span>Share My Archetype Card →</span>
+            </button>
           </div>
-        </section>
+        </div>
 
         {/* Highlighted Completion Summary Card (When a book is active or just logged) */}
         {selectedBook && (
@@ -371,26 +415,39 @@ export default function App() {
                   Your Reading Archive
                 </h1>
                 <p className="text-stone-400 text-xs sm:text-sm mt-1">
-                  Browse all completed books, filter by reader archetype, or open any book to export its story card.
+                  Browse all completed books, filter by reader archetype, export/import your JSON data, or share your archetype persona card.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setCurrentTab('track')}
-                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm transition-colors self-start sm:self-auto"
-              >
-                + Track New Book
-              </button>
+              <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setIsShareCardOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold text-xs sm:text-sm transition-colors flex items-center gap-1.5"
+                >
+                  <Share2 className="w-4 h-4 text-amber-400" />
+                  <span>Share Card</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentTab('track')}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm transition-colors"
+                >
+                  + Track New Book
+                </button>
+              </div>
             </div>
 
             <BookList
               books={books}
+              goals={goals}
               onSelectBook={(book) => {
                 setSelectedBook(book);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               onDeleteBook={handleDeleteBook}
               onAddBookClick={() => setCurrentTab('track')}
+              onDataImported={handleDataImported}
+              onOpenShareCard={() => setIsShareCardOpen(true)}
             />
           </div>
         )}
@@ -403,16 +460,32 @@ export default function App() {
         )}
       </main>
 
+      {/* Shareable Reading Archetype Card Modal */}
+      <ShareableArchetypeCardModal
+        books={books}
+        isOpen={isShareCardOpen}
+        onClose={() => setIsShareCardOpen(false)}
+      />
+
       {/* Footer */}
-      <footer className="border-t border-stone-800/80 py-8 text-center text-xs text-stone-500 space-y-3">
-        <div className="flex items-center justify-center gap-2 flex-wrap text-[11px] text-stone-400 font-mono">
-          <span className="px-3 py-1 rounded-full bg-stone-900 border border-stone-800 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            MVP Edition • Goals & Books Stored on This Device (localStorage)
-          </span>
-          <span className="text-stone-600 hidden sm:inline">·</span>
-          <span className="text-stone-500">Private to Your Browser</span>
+      <footer className="border-t border-stone-800/80 py-8 text-center text-xs text-stone-500 space-y-4">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-2 flex-wrap text-[11px] text-stone-400 font-mono">
+            <span className="px-3 py-1 rounded-full bg-stone-900 border border-stone-800 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              MVP Edition • Goals & Books Stored on This Device (localStorage)
+            </span>
+            <span className="text-stone-600 hidden sm:inline">·</span>
+            <span className="text-stone-500">Private to Your Browser</span>
+          </div>
+
+          <DataPortabilityToolbar
+            books={books}
+            goals={goals}
+            onDataImported={handleDataImported}
+          />
         </div>
+
         <p className="font-serif">
           PagePace • Gamified Book Tracking & Reading Velocity Archetypes
         </p>
