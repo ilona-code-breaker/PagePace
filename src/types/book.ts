@@ -1,4 +1,11 @@
-export type ArchetypeId = 'speed-reader' | 'steady-cruiser' | 'book-sommelier' | 'bedtime-taster';
+export type ArchetypeId =
+  | 'bedtime-taster'
+  | 'book-sommelier'
+  | 'cozy-lounge-reader'
+  | 'steady-cruiser'
+  | 'momentum-builder'
+  | 'speed-reader'
+  | 'narrative-comet';
 
 export interface ArchetypeDefinition {
   id: ArchetypeId;
@@ -19,6 +26,8 @@ export interface ArchetypeDefinition {
   strengths: string[];
 }
 
+export type ReadingArchetype = ArchetypeDefinition;
+
 export interface BookEntry {
   id: string;
   title: string;
@@ -33,7 +42,6 @@ export interface BookEntry {
   review: string;
   genre?: string;
   format?: 'Physical' | 'E-Reader' | 'Audiobook' | 'Hybrid';
-  status?: 'read' | 'currently-reading' | 'to-read';
   coverUrl?: string;
   isbn?: string;
   publishedYear?: number;

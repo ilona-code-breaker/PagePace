@@ -20,6 +20,8 @@ import {
   Wine,
   Moon,
   Zap,
+  Rocket,
+  Armchair,
   Info,
   X,
 } from 'lucide-react';
@@ -88,40 +90,58 @@ export const CompletionSummaryCard: React.FC<CompletionSummaryCardProps> = ({
 
   const renderArchetypeIcon = () => {
     switch (book.archetypeId) {
+      case 'narrative-comet':
+        return <Flame className="w-8 h-8 text-rose-400" />;
       case 'speed-reader':
         return <Zap className="w-8 h-8 text-amber-400" />;
+      case 'momentum-builder':
+        return <Rocket className="w-8 h-8 text-emerald-400" />;
       case 'steady-cruiser':
-        return <Compass className="w-8 h-8 text-emerald-400" />;
+        return <Compass className="w-8 h-8 text-cyan-400" />;
+      case 'cozy-lounge-reader':
+        return <Armchair className="w-8 h-8 text-blue-400" />;
       case 'book-sommelier':
-        return <Wine className="w-8 h-8 text-purple-400" />;
+        return <Wine className="w-8 h-8 text-pink-400" />;
       case 'bedtime-taster':
-        return <Moon className="w-8 h-8 text-sky-400" />;
+        return <Moon className="w-8 h-8 text-violet-400" />;
     }
   };
 
   const getBorderColorClass = () => {
     switch (book.archetypeId) {
+      case 'narrative-comet':
+        return 'border-rose-500/30 shadow-rose-500/10';
       case 'speed-reader':
         return 'border-amber-500/30 shadow-amber-500/10';
-      case 'steady-cruiser':
+      case 'momentum-builder':
         return 'border-emerald-500/30 shadow-emerald-500/10';
+      case 'steady-cruiser':
+        return 'border-cyan-500/30 shadow-cyan-500/10';
+      case 'cozy-lounge-reader':
+        return 'border-blue-500/30 shadow-blue-500/10';
       case 'book-sommelier':
-        return 'border-purple-500/30 shadow-purple-500/10';
+        return 'border-pink-500/30 shadow-pink-500/10';
       case 'bedtime-taster':
-        return 'border-sky-500/30 shadow-sky-500/10';
+        return 'border-violet-500/30 shadow-violet-500/10';
     }
   };
 
   const getPillBadgeStyle = () => {
     switch (book.archetypeId) {
+      case 'narrative-comet':
+        return 'text-rose-400 bg-rose-500/10 border-rose-500/30';
       case 'speed-reader':
         return 'text-amber-400 bg-amber-500/10 border-amber-500/30';
-      case 'steady-cruiser':
+      case 'momentum-builder':
         return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+      case 'steady-cruiser':
+        return 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30';
+      case 'cozy-lounge-reader':
+        return 'text-blue-400 bg-blue-500/10 border-blue-500/30';
       case 'book-sommelier':
-        return 'text-purple-400 bg-purple-500/10 border-purple-500/30';
+        return 'text-pink-400 bg-pink-500/10 border-pink-500/30';
       case 'bedtime-taster':
-        return 'text-sky-400 bg-sky-500/10 border-sky-500/30';
+        return 'text-violet-400 bg-violet-500/10 border-violet-500/30';
     }
   };
 

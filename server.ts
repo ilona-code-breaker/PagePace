@@ -180,9 +180,18 @@ A reader just finished a book with the following stats:
 - Reader Rating: ${rating} / 5.0 (0.1 precision scale)
 - Reader Review / Thoughts: "${review || 'No written notes.'}"
 
-Generate a short, warm, and highly personalized celebration message (2-3 punchy sentences) that:
-1. Validates and honors their reading style (CRITICAL: never judge slower readers; celebrate Book Sommeliers for their deep attention and Bedtime Tasters for mindful self-care, while celebrating Speed Readers for momentum and Steady Cruisers for consistency).
-2. Connects their ${rating}/5.0 rating and thoughts to their pace.
+PagePace recognizes 7 distinct Reading Speed Archetypes:
+1. 🌙 Bedtime Taster (0.1–14.9 PPD): 'Gentle, low-pressure reading to unwind.' Sacred mindful self-care, stress relief, and honoring unhurried nighttime pages before sleep.
+2. 🍷 Book Sommelier (15.0–29.9 PPD): 'Savoring every word, chapter, and plot nuance.' Prose aeration, deep textual absorption, literary critique, and rich intellectual subtext.
+3. 🛋️ Cozy Lounge Reader (30.0–44.9 PPD): 'Settled in for the long haul; effortless immersion.' Blanket-wrapped comfort, sustained attention span, zero deadlines, and warm narrative indulgence.
+4. 🧭 Steady Cruiser (45.0–64.9 PPD): 'Consistent, reliable, and smooth execution.' Clockwork daily habit, rhythmic cadence, and dependable literary stamina.
+5. 🚀 Momentum Builder (65.0–89.9 PPD): 'Gaining speed as the climax approaches.' Dynamic acceleration, emotional crescendo, and irresistible pull toward the finale.
+6. ⚡ Speed Reader (90.0–124.9 PPD): 'Blink and you miss it! A force of nature through plotlines.' Supersonic devourer, electric plot binge-reading, and zero cliffhanger lag.
+7. 💥 Narrative Comet (125.0+ PPD): 'An unstoppable literary streak blazing through entire series.' Supernova reading stamina, cosmic story absorption, and fierce unyielding passion.
+
+Generate a short, warm, bespoke celebration message (2-3 punchy sentences) that:
+1. Validates and honors their specific assigned archetype (${archetype}) and velocity (${ppd} PPD). (CRITICAL: Every pace is a superpower! Treat Bedtime Tasters, Sommeliers, and Lounge Readers with royal literary respect for presence and craft, and applaud Momentum Builders, Speed Readers, and Comets for their electrifying speed).
+2. Directly incorporates their assigned archetype philosophy and connects their ${rating}/5.0 rating and thoughts to their pace.
 3. Keeps a modern, witty, encouraging BookTok/Bookstagram-friendly tone. Do not include markdown headers or bullet points; just the warm celebratory message text.`;
 
     const aiPromise = ai.models.generateContent({
@@ -222,15 +231,22 @@ Generate a short, warm, and highly personalized celebration message (2-3 punchy 
 
 function getFallbackCelebration(archetype: string, ppd: number, rating: number, title: string, elapsedDays: number): string {
   const ratingText = rating >= 4.4 ? "a masterclass" : rating >= 3.6 ? "a deeply worthwhile journey" : "an intriguing exploration";
+  const bookName = `"${title || 'this book'}"`;
   
-  if (archetype?.toLowerCase().includes('speed') || ppd >= 80) {
-    return `Velocity unleashed! Burning through ${ppd} pages a day on "${title || 'this book'}" proves you were utterly swept into the narrative vortex. You didn't just read this in ${elapsedDays} days—you conquered it at rocket speed.`;
-  } else if (archetype?.toLowerCase().includes('cruiser') || (ppd >= 40 && ppd < 80)) {
-    return `Pure rhythmic mastery. Clocking in at ${ppd} pages per day across ${elapsedDays} days demonstrates the golden standard of reading discipline. You navigated "${title || 'this story'}" with flawless momentum, deeming it ${ratingText}.`;
-  } else if (archetype?.toLowerCase().includes('sommelier') || (ppd >= 15 && ppd < 40)) {
-    return `An exquisite vintage read. Taking ${elapsedDays} days at ${ppd} pages a day is how true prose is meant to be savored. You gave every character and plot twist the breathing room they deserved—a true literary connoisseur's pace.`;
+  if (archetype?.toLowerCase().includes('comet') || ppd >= 125.0) {
+    return `Supernova velocity unleashed! Burning through ${ppd} pages a day on ${bookName} in ${elapsedDays} day(s) proves you were possessed by pure literary fervor. You didn't just read this book—you orbited it at cosmic speed.`;
+  } else if (archetype?.toLowerCase().includes('speed') || (ppd >= 90.0 && ppd < 125.0)) {
+    return `Velocity unleashed! Blitzing through ${ppd} pages a day on ${bookName} proves you were utterly swept into the narrative vortex. You conquered this in ${elapsedDays} day(s) at lightning speed.`;
+  } else if (archetype?.toLowerCase().includes('momentum') || (ppd >= 65.0 && ppd < 90.0)) {
+    return `Dynamic momentum in action! Reading ${ppd} pages per day across ${elapsedDays} day(s) shows your pace accelerated as the stakes intensified. You closed this book with magnetic finale energy.`;
+  } else if (archetype?.toLowerCase().includes('cruiser') || (ppd >= 45.0 && ppd < 65.0)) {
+    return `Pure rhythmic mastery. Clocking in at ${ppd} pages per day across ${elapsedDays} day(s) demonstrates the golden standard of reading discipline. You navigated ${bookName} with flawless momentum, deeming it ${ratingText}.`;
+  } else if (archetype?.toLowerCase().includes('lounge') || (ppd >= 30.0 && ppd < 45.0)) {
+    return `Effortless immersion achieved. Sinking into ${bookName} at a comforting ${ppd} pages a day over ${elapsedDays} day(s) is pure reader bliss. Zero deadlines, total immersion.`;
+  } else if (archetype?.toLowerCase().includes('sommelier') || (ppd >= 15.0 && ppd < 30.0)) {
+    return `An exquisite vintage read. Taking ${elapsedDays} day(s) at ${ppd} pages a day is how true prose is meant to be savored. You gave every character and plot twist the breathing room they deserved—a true literary connoisseur's pace.`;
   } else {
-    return `The ultimate self-care companion. Savoring "${title || 'this book'}" gently at ${ppd} pages a day over ${elapsedDays} days proves reading is your sanctuary, not a sprint. Every quiet evening chapter was a mindful gift to yourself.`;
+    return `The ultimate self-care companion. Savoring ${bookName} gently at ${ppd} pages a day over ${elapsedDays} day(s) proves reading is your sanctuary, not a sprint. Every quiet evening chapter was a mindful gift to yourself.`;
   }
 }
 

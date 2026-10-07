@@ -90,20 +90,22 @@ export const ShareableArchetypeCardModal: React.FC<ShareableArchetypeCardModalPr
     // 4. Primary Archetype Badge & Emoji
     const badgeY = topY + (isStory ? 120 : 90);
 
-    // Archetype Icon circle
+    // Archetype Icon circle with bespoke glow
     ctx.save();
+    ctx.shadowColor = archetype.accentHex;
+    ctx.shadowBlur = 28;
     ctx.beginPath();
-    ctx.arc(width / 2, badgeY, 44, 0, Math.PI * 2);
+    ctx.arc(width / 2, badgeY, 50, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
     ctx.fill();
     ctx.strokeStyle = archetype.accentHex;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3;
     ctx.stroke();
     ctx.restore();
 
-    ctx.font = '40px sans-serif';
+    ctx.font = '48px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(archetype.badgeEmoji || '✨', width / 2, badgeY + 14);
+    ctx.fillText(archetype.badgeEmoji || '✨', width / 2, badgeY + 16);
 
     // Archetype Title
     const titleY = badgeY + 90;

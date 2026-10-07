@@ -1,4 +1,4 @@
-import { BookEntry, MonthlyGoal } from '../types/book';
+import { BookEntry, MonthlyGoal, ArchetypeId } from '../types/book';
 import { getArchetypeByPPD } from './calculator';
 
 export function getCurrentMonthKey(): string {
@@ -63,6 +63,7 @@ export interface MonthProgressData {
   requiredPpdForPages: number;
   averagePpdAchieved: number;
   projectedArchetype: string;
+  projectedArchetypeId: ArchetypeId;
   paceStatus: 'completed' | 'ahead' | 'on_track' | 'behind' | 'past_missed';
 }
 
@@ -182,6 +183,7 @@ export function calculateMonthProgress(
     requiredPpdForPages,
     averagePpdAchieved,
     projectedArchetype: archetypeForRequired.name,
+    projectedArchetypeId: archetypeForRequired.id,
     paceStatus,
   };
 }

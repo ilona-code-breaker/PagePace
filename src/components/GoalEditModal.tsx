@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MonthlyGoal } from '../types/book';
 import { formatMonthLabel } from '../utils/goalUtils';
+import { VelocityTelemetryBar } from './VelocityTelemetryBar';
 import {
   Target,
   BookOpen,
@@ -14,6 +15,9 @@ import {
   Compass,
   Wine,
   Moon,
+  Flame,
+  Rocket,
+  Armchair,
   RotateCcw,
 } from 'lucide-react';
 
@@ -37,6 +41,9 @@ export const GoalEditModal: React.FC<GoalEditModalProps> = ({
 
   const bookPresets = [1, 2, 3, 4, 5, 6, 8];
   const pagePresets = [300, 500, 800, 1000, 1200, 1500, 2000];
+
+  // Projected required velocity based on 30-day month
+  const projectedPpd = Math.max(0.1, Math.round(((targetPages || 300) / 30) * 10) / 10);
 
   const handleApplyArchetypePreset = (
     type: 'books' | 'pages' | 'both',
@@ -101,13 +108,21 @@ export const GoalEditModal: React.FC<GoalEditModalProps> = ({
           </div>
         </div>
 
-        {/* Archetype Goal Quick Templates */}
+        {/* Live Velocity & Archetype Telemetry Bar for Goal */}
+        <VelocityTelemetryBar
+          ppd={projectedPpd}
+          elapsedDays={30}
+          totalPages={targetPages}
+        />
+
+        {/* Archetype Goal Quick Templates (All 7 Tiers) */}
         <div className="space-y-2">
           <label className="text-xs font-medium text-stone-300 flex items-center justify-between">
-            <span>Archetype-Aligned Quick Presets</span>
+            <span>Archetype-Aligned Quick Presets (7 Tiers)</span>
             <span className="text-[11px] text-stone-500 font-normal">Click to apply template</span>
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {/* 1. Bedtime Taster */}
             <button
               type="button"
               onClick={() =>
@@ -118,73 +133,139 @@ export const GoalEditModal: React.FC<GoalEditModalProps> = ({
                   'Mindful nighttime unwinding & gentle reading'
                 )
               }
-              className="p-2.5 rounded-xl bg-stone-950 border border-stone-800 hover:border-sky-500/50 text-left transition-colors group"
+              className="p-2 rounded-xl bg-stone-950 border border-stone-800 hover:border-violet-500/50 text-left transition-colors group"
             >
-              <div className="flex items-center gap-1.5 text-xs font-bold text-sky-400">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-violet-400">
                 <Moon className="w-3.5 h-3.5" /> Bedtime Taster
               </div>
-              <div className="text-[11px] text-stone-400 mt-0.5 font-mono">
-                300 pages (~10 PPD)
+              <div className="text-[10px] text-stone-400 mt-0.5 font-mono">
+                300 pgs (~10 PPD)
               </div>
             </button>
 
+            {/* 2. Book Sommelier */}
             <button
               type="button"
               onClick={() =>
                 handleApplyArchetypePreset(
                   'both',
                   2,
-                  700,
+                  600,
                   'Savoring prose, depth & literary nuance'
                 )
               }
-              className="p-2.5 rounded-xl bg-stone-950 border border-stone-800 hover:border-purple-500/50 text-left transition-colors group"
+              className="p-2 rounded-xl bg-stone-950 border border-stone-800 hover:border-pink-500/50 text-left transition-colors group"
             >
-              <div className="flex items-center gap-1.5 text-xs font-bold text-purple-400">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-pink-400">
                 <Wine className="w-3.5 h-3.5" /> Book Sommelier
               </div>
-              <div className="text-[11px] text-stone-400 mt-0.5 font-mono">
-                2 books · 700 pages
+              <div className="text-[10px] text-stone-400 mt-0.5 font-mono">
+                2 bks · 600 pgs (~20 PPD)
               </div>
             </button>
 
+            {/* 3. Cozy Lounge Reader */}
             <button
               type="button"
               onClick={() =>
                 handleApplyArchetypePreset(
                   'both',
                   3,
-                  1100,
-                  'Daily rhythmic habit & steady momentum'
+                  1050,
+                  'Blanket-wrapped comfort and effortless immersion'
                 )
               }
-              className="p-2.5 rounded-xl bg-stone-950 border border-stone-800 hover:border-emerald-500/50 text-left transition-colors group"
+              className="p-2 rounded-xl bg-stone-950 border border-stone-800 hover:border-blue-500/50 text-left transition-colors group"
             >
-              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
-                <Compass className="w-3.5 h-3.5" /> Steady Cruiser
+              <div className="flex items-center gap-1.5 text-xs font-bold text-blue-400">
+                <Armchair className="w-3.5 h-3.5" /> Cozy Lounge
               </div>
-              <div className="text-[11px] text-stone-400 mt-0.5 font-mono">
-                3 books · 1,100 pages
+              <div className="text-[10px] text-stone-400 mt-0.5 font-mono">
+                3 bks · 1,050 pgs (~35 PPD)
               </div>
             </button>
 
+            {/* 4. Steady Cruiser */}
+            <button
+              type="button"
+              onClick={() =>
+                handleApplyArchetypePreset(
+                  'both',
+                  4,
+                  1500,
+                  'Daily rhythmic habit & smooth execution'
+                )
+              }
+              className="p-2 rounded-xl bg-stone-950 border border-stone-800 hover:border-cyan-500/50 text-left transition-colors group"
+            >
+              <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-400">
+                <Compass className="w-3.5 h-3.5" /> Steady Cruiser
+              </div>
+              <div className="text-[10px] text-stone-400 mt-0.5 font-mono">
+                4 bks · 1,500 pgs (~50 PPD)
+              </div>
+            </button>
+
+            {/* 5. Momentum Builder */}
             <button
               type="button"
               onClick={() =>
                 handleApplyArchetypePreset(
                   'both',
                   5,
-                  2000,
-                  'High velocity narrative devouring'
+                  2250,
+                  'Gaining speed as climaxes approach'
                 )
               }
-              className="p-2.5 rounded-xl bg-stone-950 border border-stone-800 hover:border-amber-500/50 text-left transition-colors group"
+              className="p-2 rounded-xl bg-stone-950 border border-stone-800 hover:border-emerald-500/50 text-left transition-colors group"
+            >
+              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+                <Rocket className="w-3.5 h-3.5" /> Momentum
+              </div>
+              <div className="text-[10px] text-stone-400 mt-0.5 font-mono">
+                5 bks · 2,250 pgs (~75 PPD)
+              </div>
+            </button>
+
+            {/* 6. Speed Reader */}
+            <button
+              type="button"
+              onClick={() =>
+                handleApplyArchetypePreset(
+                  'both',
+                  7,
+                  3150,
+                  'Hypersonic devourer through plotlines'
+                )
+              }
+              className="p-2 rounded-xl bg-stone-950 border border-stone-800 hover:border-amber-500/50 text-left transition-colors group"
             >
               <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
                 <Zap className="w-3.5 h-3.5" /> Speed Reader
               </div>
-              <div className="text-[11px] text-stone-400 mt-0.5 font-mono">
-                5 books · 2,000 pages
+              <div className="text-[10px] text-stone-400 mt-0.5 font-mono">
+                7 bks · 3,150 pgs (~105 PPD)
+              </div>
+            </button>
+
+            {/* 7. Narrative Comet */}
+            <button
+              type="button"
+              onClick={() =>
+                handleApplyArchetypePreset(
+                  'both',
+                  10,
+                  4200,
+                  'An unstoppable literary streak blazing through entire series'
+                )
+              }
+              className="p-2 rounded-xl bg-stone-950 border border-stone-800 hover:border-rose-500/50 text-left transition-colors group col-span-2 sm:col-span-3"
+            >
+              <div className="flex items-center gap-1.5 text-xs font-bold text-rose-400">
+                <Flame className="w-3.5 h-3.5" /> Narrative Comet (Supernova 125+ PPD)
+              </div>
+              <div className="text-[10px] text-stone-400 mt-0.5 font-mono">
+                10 books · 4,200 pages (~140 PPD)
               </div>
             </button>
           </div>

@@ -1,5 +1,7 @@
-import { ArchetypeId, ArchetypeDefinition } from '../types/book';
+import { ArchetypeId, ArchetypeDefinition, ReadingArchetype } from '../types/book';
 import { ARCHETYPES } from '../constants/archetypes';
+
+export type { ReadingArchetype, ArchetypeDefinition, ArchetypeId };
 
 /**
  * Calculates elapsed days: Finish Date - Start Date + 1 (minimum 1 day).
@@ -37,24 +39,39 @@ export function calculatePPD(totalPages: number, elapsedDays: number): number {
 }
 
 /**
- * Assigns Reading Speed Archetype based on PPD:
- * 80+ PPD: Speed Reader / Page Turner
- * 40–79 PPD: Steady Cruiser
- * 15–39 PPD: Book Sommelier
- * < 15 PPD: Bedtime Taster
+ * Assigns Reading Speed Archetype based on PPD (7 Tiers):
+ * >= 125.0 PPD: 💥 Narrative Comet (Rose #f43f5e)
+ * 90.0 – 124.9 PPD: ⚡ Speed Reader (Amber #f59e0b)
+ * 65.0 – 89.9 PPD: 🚀 Momentum Builder (Emerald #10b981)
+ * 45.0 – 64.9 PPD: 🧭 Steady Cruiser (Cyan #06b6d4)
+ * 30.0 – 44.9 PPD: 🛋️ Cozy Lounge Reader (Blue #3b82f6)
+ * 15.0 – 29.9 PPD: 🍷 Book Sommelier (Pink #ec4899)
+ * 0.1 – 14.9 PPD: 🌙 Bedtime Taster (Violet #8b5cf6)
  */
 export function getArchetypeByPPD(ppd: number): ArchetypeDefinition {
-  if (ppd >= 80) {
+  if (ppd >= 125.0) {
+    return ARCHETYPES['narrative-comet'];
+  }
+  if (ppd >= 90.0) {
     return ARCHETYPES['speed-reader'];
   }
-  if (ppd >= 40) {
+  if (ppd >= 65.0) {
+    return ARCHETYPES['momentum-builder'];
+  }
+  if (ppd >= 45.0) {
     return ARCHETYPES['steady-cruiser'];
   }
-  if (ppd >= 15) {
+  if (ppd >= 30.0) {
+    return ARCHETYPES['cozy-lounge-reader'];
+  }
+  if (ppd >= 15.0) {
     return ARCHETYPES['book-sommelier'];
   }
   return ARCHETYPES['bedtime-taster'];
 }
+
+// Alias per prompt specifications
+export const assignArchetype = getArchetypeByPPD;
 
 /**
  * Rounds and formats a rating into 0.1 precision (e.g. 0.1, 0.2, ... 4.9, 5.0)

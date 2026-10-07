@@ -23,6 +23,9 @@ import {
   Compass,
   Wine,
   Moon,
+  Flame,
+  Rocket,
+  Armchair,
   ArrowRight,
   BookOpen,
   Award,
@@ -190,62 +193,114 @@ export default function App() {
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-10">
         {/* Archetype Quick Tier Bar & Persona Action */}
         <div className="space-y-3">
-          <section aria-label="Reading Archetypes Overview" className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
+          <section aria-label="Reading Archetypes Overview" className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+            {/* 1. Narrative Comet */}
             <div
               onClick={() => setCurrentTab('codex')}
-              className="p-3 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-amber-500/40 transition-colors cursor-pointer group flex items-center gap-3"
+              className="p-2.5 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-rose-500/40 transition-colors cursor-pointer group flex items-center gap-2.5"
             >
-              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
-                <Zap className="w-4 h-4" />
+              <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 group-hover:scale-110 transition-transform">
+                <Flame className="w-3.5 h-3.5" />
               </div>
               <div className="min-w-0">
-                <div className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">80+ PPD</div>
+                <div className="text-[9px] font-mono text-stone-500 uppercase tracking-wider">125+ PPD</div>
+                <div className="text-xs font-bold text-stone-200 truncate group-hover:text-rose-300">
+                  Comet
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Speed Reader */}
+            <div
+              onClick={() => setCurrentTab('codex')}
+              className="p-2.5 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-amber-500/40 transition-colors cursor-pointer group flex items-center gap-2.5"
+            >
+              <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
+                <Zap className="w-3.5 h-3.5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[9px] font-mono text-stone-500 uppercase tracking-wider">90–124 PPD</div>
                 <div className="text-xs font-bold text-stone-200 truncate group-hover:text-amber-300">
                   Speed Reader
                 </div>
               </div>
             </div>
 
+            {/* 3. Momentum Builder */}
             <div
               onClick={() => setCurrentTab('codex')}
-              className="p-3 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-emerald-500/40 transition-colors cursor-pointer group flex items-center gap-3"
+              className="p-2.5 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-emerald-500/40 transition-colors cursor-pointer group flex items-center gap-2.5"
             >
-              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
-                <Compass className="w-4 h-4" />
+              <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
+                <Rocket className="w-3.5 h-3.5" />
               </div>
               <div className="min-w-0">
-                <div className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">40–79 PPD</div>
+                <div className="text-[9px] font-mono text-stone-500 uppercase tracking-wider">65–89 PPD</div>
                 <div className="text-xs font-bold text-stone-200 truncate group-hover:text-emerald-300">
-                  Steady Cruiser
+                  Momentum
                 </div>
               </div>
             </div>
 
+            {/* 4. Steady Cruiser */}
             <div
               onClick={() => setCurrentTab('codex')}
-              className="p-3 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-purple-500/40 transition-colors cursor-pointer group flex items-center gap-3"
+              className="p-2.5 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-cyan-500/40 transition-colors cursor-pointer group flex items-center gap-2.5"
             >
-              <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
-                <Wine className="w-4 h-4" />
+              <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:scale-110 transition-transform">
+                <Compass className="w-3.5 h-3.5" />
               </div>
               <div className="min-w-0">
-                <div className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">15–39 PPD</div>
-                <div className="text-xs font-bold text-stone-200 truncate group-hover:text-purple-300">
-                  Book Sommelier
+                <div className="text-[9px] font-mono text-stone-500 uppercase tracking-wider">45–64 PPD</div>
+                <div className="text-xs font-bold text-stone-200 truncate group-hover:text-cyan-300">
+                  Cruiser
                 </div>
               </div>
             </div>
 
+            {/* 5. Cozy Lounge Reader */}
             <div
               onClick={() => setCurrentTab('codex')}
-              className="p-3 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-sky-500/40 transition-colors cursor-pointer group flex items-center gap-3"
+              className="p-2.5 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-blue-500/40 transition-colors cursor-pointer group flex items-center gap-2.5"
             >
-              <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400 group-hover:scale-110 transition-transform">
-                <Moon className="w-4 h-4" />
+              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-110 transition-transform">
+                <Armchair className="w-3.5 h-3.5" />
               </div>
               <div className="min-w-0">
-                <div className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">&lt; 15 PPD</div>
-                <div className="text-xs font-bold text-stone-200 truncate group-hover:text-sky-300">
+                <div className="text-[9px] font-mono text-stone-500 uppercase tracking-wider">30–44 PPD</div>
+                <div className="text-xs font-bold text-stone-200 truncate group-hover:text-blue-300">
+                  Cozy Lounge
+                </div>
+              </div>
+            </div>
+
+            {/* 6. Book Sommelier */}
+            <div
+              onClick={() => setCurrentTab('codex')}
+              className="p-2.5 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-pink-500/40 transition-colors cursor-pointer group flex items-center gap-2.5"
+            >
+              <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-400 group-hover:scale-110 transition-transform">
+                <Wine className="w-3.5 h-3.5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[9px] font-mono text-stone-500 uppercase tracking-wider">15–29 PPD</div>
+                <div className="text-xs font-bold text-stone-200 truncate group-hover:text-pink-300">
+                  Sommelier
+                </div>
+              </div>
+            </div>
+
+            {/* 7. Bedtime Taster */}
+            <div
+              onClick={() => setCurrentTab('codex')}
+              className="p-2.5 rounded-xl bg-stone-900/60 border border-stone-800 hover:border-violet-500/40 transition-colors cursor-pointer group flex items-center gap-2.5 col-span-2 sm:col-span-1"
+            >
+              <div className="p-1.5 rounded-lg bg-violet-500/10 text-violet-400 group-hover:scale-110 transition-transform">
+                <Moon className="w-3.5 h-3.5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[9px] font-mono text-stone-500 uppercase tracking-wider">0.1–14 PPD</div>
+                <div className="text-xs font-bold text-stone-200 truncate group-hover:text-violet-300">
                   Bedtime Taster
                 </div>
               </div>
@@ -522,7 +577,7 @@ export default function App() {
           PagePace • Gamified Book Tracking & Reading Velocity Archetypes
         </p>
         <p className="text-[11px] text-stone-600">
-          Designed with love for Speed Readers, Steady Cruisers, Book Sommeliers, and Bedtime Tasters alike.
+          Designed with love for Bedtime Tasters, Book Sommeliers, Cozy Lounge Readers, Steady Cruisers, Momentum Builders, Speed Readers, and Narrative Comets alike.
         </p>
       </footer>
     </div>

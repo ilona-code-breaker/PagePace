@@ -30,13 +30,33 @@ export function generateArchetypeCelebration({
   const isMidRating = rating >= 3.4 && rating < 4.4;
 
   switch (archetypeId) {
+    case 'narrative-comet': {
+      if (isHighRating) {
+        return `Cosmic literary supernova! You tore through ${totalPages} pages of "${cleanTitle}"${authorMention} in ${daysText}—clocking an astronomical ${ppd} pages per day! Scoring it an enthusiastic ${rating.toFixed(1)}/5.0 proves this wasn't just a read, but an all-consuming obsession. You blazed through plotlines like an unstoppable Narrative Comet!`;
+      } else if (isMidRating) {
+        return `A roaring reading blaze! At a fierce ${ppd} PPD over ${daysText}, you orbited through "${cleanTitle}" at terminal velocity. Even with a measured ${rating.toFixed(1)}/5.0 rating, your supernatural reading speed left friction in its wake. Unstoppable velocity!`;
+      } else {
+        return `Blistering speed! Demolishing ${totalPages} pages in ${daysText} (${ppd} PPD) demonstrates extraordinary reading stamina. Even with a ${rating.toFixed(1)}/5.0 verdict, nothing could slow down your Narrative Comet streak!`;
+      }
+    }
+
     case 'speed-reader': {
       if (isHighRating) {
-        return `Absolute lightning in a bottle! You demolished ${totalPages} pages of "${cleanTitle}"${authorMention} in ${daysText}—clocking an astronomical ${ppd} pages per day. Giving it a stellar ${rating.toFixed(1)}/5.0 makes sense; when a plot grips you this fiercely, sleep isn't just optional, it's irrelevant. You are the definitive Page Turner force of nature!`;
+        return `Absolute lightning in a bottle! You devoured ${totalPages} pages of "${cleanTitle}"${authorMention} in ${daysText}—clocking an electrifying ${ppd} pages per day. Giving it a stellar ${rating.toFixed(1)}/5.0 makes total sense; when a plot grips you this fiercely, sleep isn't just optional, it's irrelevant. Pure Speed Reader excellence!`;
       } else if (isMidRating) {
-        return `Hypersonic velocity unlocked! At ${ppd} PPD over ${daysText}, you blitzed right through "${cleanTitle}" without blinking. Even with a measured ${rating.toFixed(1)}/5.0 verdict, your hunger for story momentum is formidable. Nothing stands between you and the final chapter!`;
+        return `Hypersonic velocity unlocked! At ${ppd} PPD over ${daysText}, you blitzed right through "${cleanTitle}" without blinking. Even with a balanced ${rating.toFixed(1)}/5.0 review, your hunger for narrative momentum is formidable.`;
       } else {
-        return `Unstoppable momentum! You powered through all ${totalPages} pages of "${cleanTitle}" in ${daysText} (${ppd} PPD). Even if the narrative only earned a ${rating.toFixed(1)}/5.0 from you, your reading speed proved that you don't mess around when closing a book case. On to the next conquest!`;
+        return `Unstoppable momentum! You powered through all ${totalPages} pages of "${cleanTitle}" in ${daysText} (${ppd} PPD). Even if the book landed at ${rating.toFixed(1)}/5.0, your Speed Reader engine closed the case without hesitation!`;
+      }
+    }
+
+    case 'momentum-builder': {
+      if (isHighRating) {
+        return `A masterclass in narrative crescendo! Blazing through ${totalPages} pages of "${cleanTitle}"${authorMention} at ${ppd} pages a day across ${daysText} shows how you accelerate when the story catches fire. Your ${rating.toFixed(1)}/5.0 rating mirrors that magnetic pull towards the climax!`;
+      } else if (isMidRating) {
+        return `Gaining speed with every chapter! Clocking ${ppd} PPD over ${daysText} on "${cleanTitle}", you built irresistible momentum as the narrative unfolded. Giving it a solid ${rating.toFixed(1)}/5.0 proves your instincts as a true Momentum Builder.`;
+      } else {
+        return `Dynamic acceleration! You powered through ${totalPages} pages in ${daysText} (${ppd} PPD). Even rating it ${rating.toFixed(1)}/5.0, your escalating pace proved that you know how to push straight to the final page!`;
       }
     }
 
@@ -47,6 +67,16 @@ export function generateArchetypeCelebration({
         return `Smooth, unwavering execution! Logging a clean ${ppd} PPD over ${daysText} on "${cleanTitle}", you demonstrated the dependable habit that authors dream of. Awarding it a solid ${rating.toFixed(1)}/5.0, your steady cruise kept the story alive without a shred of reader fatigue.`;
       } else {
         return `Ironclad dedication! Finishing ${totalPages} pages in ${daysText} (${ppd} PPD) shows pure reading stamina. Even when a story lands at ${rating.toFixed(1)}/5.0, your Steady Cruiser engine never stalled. That's true reader grit in action!`;
+      }
+    }
+
+    case 'cozy-lounge-reader': {
+      if (isHighRating) {
+        return `Effortless immersion achieved! Curling up with "${cleanTitle}"${authorMention} at a comforting ${ppd} pages a day over ${daysText} is the epitome of pure reader bliss. Your glowing ${rating.toFixed(1)}/5.0 verdict reflects hours well spent wrapped in an unforgettable world. A true Cozy Lounge Reader paradise!`;
+      } else if (isMidRating) {
+        return `Unrushed comfort and escape! At a relaxed ${ppd} PPD across ${daysText}, you carved out peaceful reading hours with "${cleanTitle}". Rating it a thoughtful ${rating.toFixed(1)}/5.0, you proved that reading is best enjoyed with zero pressure and total presence.`;
+      } else {
+        return `Cozy persistence! Spending ${daysText} immersed in "${cleanTitle}" (${ppd} PPD) gave this world a fair, comfortable chance. Even at ${rating.toFixed(1)}/5.0, your dedication to calm, sustained reading is deeply admirable.`;
       }
     }
 

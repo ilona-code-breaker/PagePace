@@ -16,6 +16,9 @@ import {
   Compass,
   Wine,
   Moon,
+  Flame,
+  Rocket,
+  Armchair,
   Trash2,
   Share2,
   X,
@@ -77,14 +80,20 @@ export const BookList: React.FC<BookListProps> = ({
 
   const getArchetypeIcon = (id: ArchetypeId) => {
     switch (id) {
+      case 'narrative-comet':
+        return <Flame className="w-4 h-4 text-rose-400" />;
       case 'speed-reader':
         return <Zap className="w-4 h-4 text-amber-400" />;
+      case 'momentum-builder':
+        return <Rocket className="w-4 h-4 text-emerald-400" />;
       case 'steady-cruiser':
-        return <Compass className="w-4 h-4 text-emerald-400" />;
+        return <Compass className="w-4 h-4 text-cyan-400" />;
+      case 'cozy-lounge-reader':
+        return <Armchair className="w-4 h-4 text-blue-400" />;
       case 'book-sommelier':
-        return <Wine className="w-4 h-4 text-purple-400" />;
+        return <Wine className="w-4 h-4 text-pink-400" />;
       case 'bedtime-taster':
-        return <Moon className="w-4 h-4 text-sky-400" />;
+        return <Moon className="w-4 h-4 text-violet-400" />;
     }
   };
 
@@ -198,7 +207,7 @@ export const BookList: React.FC<BookListProps> = ({
 
         {/* Secondary Row: Archetype Filter & Sort Controls */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1 border-t border-stone-800/60">
-          {/* Filter by Archetype (Functional buttons per Frontend Design Constitution) */}
+          {/* Filter by Archetype (All 7 Tiers) */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
             <span className="text-[11px] text-stone-500 uppercase font-mono tracking-wider mr-1 shrink-0">
               Archetype:
@@ -206,7 +215,7 @@ export const BookList: React.FC<BookListProps> = ({
             <button
               type="button"
               onClick={() => setFilterArchetype('all')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
                 filterArchetype === 'all'
                   ? 'bg-stone-800 text-stone-100 shadow-sm border border-stone-700'
                   : 'text-stone-400 hover:text-stone-200'
@@ -216,10 +225,22 @@ export const BookList: React.FC<BookListProps> = ({
             </button>
             <button
               type="button"
+              onClick={() => setFilterArchetype('narrative-comet')}
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1 ${
+                filterArchetype === 'narrative-comet'
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold'
+                  : 'text-stone-400 hover:text-stone-200'
+              }`}
+            >
+              <Flame className="w-3 h-3 text-rose-400" />
+              Narrative Comet
+            </button>
+            <button
+              type="button"
               onClick={() => setFilterArchetype('speed-reader')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1 ${
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1 ${
                 filterArchetype === 'speed-reader'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold'
                   : 'text-stone-400 hover:text-stone-200'
               }`}
             >
@@ -228,38 +249,62 @@ export const BookList: React.FC<BookListProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setFilterArchetype('steady-cruiser')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1 ${
-                filterArchetype === 'steady-cruiser'
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+              onClick={() => setFilterArchetype('momentum-builder')}
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1 ${
+                filterArchetype === 'momentum-builder'
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold'
                   : 'text-stone-400 hover:text-stone-200'
               }`}
             >
-              <Compass className="w-3 h-3 text-emerald-400" />
+              <Rocket className="w-3 h-3 text-emerald-400" />
+              Momentum
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterArchetype('steady-cruiser')}
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1 ${
+                filterArchetype === 'steady-cruiser'
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold'
+                  : 'text-stone-400 hover:text-stone-200'
+              }`}
+            >
+              <Compass className="w-3 h-3 text-cyan-400" />
               Steady Cruiser
             </button>
             <button
               type="button"
-              onClick={() => setFilterArchetype('book-sommelier')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1 ${
-                filterArchetype === 'book-sommelier'
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+              onClick={() => setFilterArchetype('cozy-lounge-reader')}
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1 ${
+                filterArchetype === 'cozy-lounge-reader'
+                  ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30 font-semibold'
                   : 'text-stone-400 hover:text-stone-200'
               }`}
             >
-              <Wine className="w-3 h-3 text-purple-400" />
-              Book Sommelier
+              <Armchair className="w-3 h-3 text-blue-400" />
+              Cozy Lounge
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterArchetype('book-sommelier')}
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1 ${
+                filterArchetype === 'book-sommelier'
+                  ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30 font-semibold'
+                  : 'text-stone-400 hover:text-stone-200'
+              }`}
+            >
+              <Wine className="w-3 h-3 text-pink-400" />
+              Sommelier
             </button>
             <button
               type="button"
               onClick={() => setFilterArchetype('bedtime-taster')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1 ${
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1 ${
                 filterArchetype === 'bedtime-taster'
-                  ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                  ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30 font-semibold'
                   : 'text-stone-400 hover:text-stone-200'
               }`}
             >
-              <Moon className="w-3 h-3 text-sky-400" />
+              <Moon className="w-3 h-3 text-violet-400" />
               Bedtime Taster
             </button>
           </div>

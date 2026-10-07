@@ -97,15 +97,19 @@ export const StoryCardCanvas: React.FC<StoryCardCanvasProps> = ({ book, archetyp
     ctx.fillText('PAGEPACE • VERIFIED READING STATS', width / 2, isStory ? 120 : 90);
     ctx.letterSpacing = '0px';
 
-    // Archetype Icon Badge
+    // Archetype Icon Badge with glowing effect
     const badgeY = isStory ? 240 : 170;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.save();
+    ctx.shadowColor = archetype.accentHex;
+    ctx.shadowBlur = 32;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
     ctx.beginPath();
     ctx.arc(width / 2, badgeY, 64, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = archetype.accentHex;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.stroke();
+    ctx.restore();
 
     ctx.font = '64px sans-serif';
     ctx.textAlign = 'center';

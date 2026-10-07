@@ -463,7 +463,20 @@ export const MonthlyGoalTracker: React.FC<MonthlyGoalTrackerProps> = ({
               <div className="p-3.5 rounded-xl bg-stone-950 border border-stone-800">
                 <div className="text-[11px] text-stone-500 font-medium">Archetype Velocity Tier</div>
                 <div className="text-base font-bold text-stone-100 mt-0.5 flex items-center gap-2">
+                  <span>{ARCHETYPES[progress.projectedArchetypeId]?.badgeEmoji || '✨'}</span>
                   <span>{progress.projectedArchetype}</span>
+                  {ARCHETYPES[progress.projectedArchetypeId] && (
+                    <span
+                      className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
+                      style={{
+                        color: ARCHETYPES[progress.projectedArchetypeId].accentHex,
+                        borderColor: `${ARCHETYPES[progress.projectedArchetypeId].accentHex}40`,
+                        backgroundColor: `${ARCHETYPES[progress.projectedArchetypeId].accentHex}10`,
+                      }}
+                    >
+                      {ARCHETYPES[progress.projectedArchetypeId].ppdRange}
+                    </span>
+                  )}
                 </div>
                 <p className="text-[11px] text-stone-400 mt-1">
                   Your required reading rate aligns with the{' '}

@@ -7,6 +7,7 @@ import {
   getArchetypeByPPD,
   snapToPrecision01,
 } from '../utils/calculator';
+import { VelocityTelemetryBar } from './VelocityTelemetryBar';
 import { generateArchetypeCelebration } from '../utils/celebrationGenerator';
 import { RatingInput } from './RatingInput';
 import { playCelebrationChime } from '../utils/sound';
@@ -29,6 +30,9 @@ import {
   Compass,
   Wine,
   Moon,
+  Flame,
+  Rocket,
+  Armchair,
   Info,
   CheckCircle2,
   Search,
@@ -310,14 +314,20 @@ export const BookForm: React.FC<BookFormProps> = ({
 
   const getArchetypeIcon = () => {
     switch (liveArchetype.id) {
+      case 'narrative-comet':
+        return <Flame className="w-5 h-5 text-rose-400" />;
       case 'speed-reader':
         return <Zap className="w-5 h-5 text-amber-400" />;
+      case 'momentum-builder':
+        return <Rocket className="w-5 h-5 text-emerald-400" />;
       case 'steady-cruiser':
-        return <Compass className="w-5 h-5 text-emerald-400" />;
+        return <Compass className="w-5 h-5 text-cyan-400" />;
+      case 'cozy-lounge-reader':
+        return <Armchair className="w-5 h-5 text-blue-400" />;
       case 'book-sommelier':
-        return <Wine className="w-5 h-5 text-purple-400" />;
+        return <Wine className="w-5 h-5 text-pink-400" />;
       case 'bedtime-taster':
-        return <Moon className="w-5 h-5 text-sky-400" />;
+        return <Moon className="w-5 h-5 text-violet-400" />;
     }
   };
 
@@ -539,51 +549,12 @@ export const BookForm: React.FC<BookFormProps> = ({
         </div>
       </div>
 
-      {/* Live Calculation Bar */}
-      <div className="p-4 rounded-xl bg-stone-950 border border-stone-800/90 space-y-3">
-        <div className="flex items-center justify-between text-xs text-stone-400">
-          <span className="font-mono uppercase tracking-wider text-stone-500">
-            Live Reading Velocity Engine
-          </span>
-          <span className="text-stone-400">Formula: PPD = Total Pages / (Days + 1)</span>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-          <div className="flex items-center gap-4">
-            <div>
-              <div className="text-[11px] text-stone-500 font-medium">Elapsed Days</div>
-              <div className="text-lg font-mono font-bold text-stone-200">
-                {elapsedDays}{' '}
-                <span className="text-xs text-stone-500 font-normal">
-                  {elapsedDays === 1 ? 'day' : 'days'}
-                </span>
-              </div>
-            </div>
-
-            <div className="text-stone-700">/</div>
-
-            <div>
-              <div className="text-[11px] text-stone-500 font-medium">Reading Velocity</div>
-              <div className="text-lg font-mono font-bold text-amber-400">
-                {livePpd.toFixed(1)} <span className="text-xs text-stone-400 font-normal">PPD</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Live Predicted Archetype */}
-          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-stone-900 border border-stone-800">
-            {getArchetypeIcon()}
-            <div>
-              <div className="text-[10px] uppercase font-mono text-stone-400">Assigned Archetype</div>
-              <div className="text-xs font-bold text-stone-100">{liveArchetype.name}</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="text-xs text-stone-400 italic font-serif">
-          “{liveArchetype.tagline}”
-        </div>
-      </div>
+      {/* Live 7-Tier Velocity Telemetry Bar */}
+      <VelocityTelemetryBar
+        ppd={livePpd}
+        elapsedDays={elapsedDays}
+        totalPages={safePages}
+      />
 
       {/* Rating Scale: 0.1 Precision */}
       <RatingInput

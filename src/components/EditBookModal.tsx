@@ -8,6 +8,7 @@ import {
 } from '../utils/calculator';
 import { generateArchetypeCelebration } from '../utils/celebrationGenerator';
 import { RatingInput } from './RatingInput';
+import { VelocityTelemetryBar } from './VelocityTelemetryBar';
 import { ARCHETYPES } from '../constants/archetypes';
 import {
   X,
@@ -152,44 +153,12 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
           </button>
         </div>
 
-        {/* Live Velocity & Archetype Feedback Banner */}
-        <div className="p-4 rounded-2xl bg-stone-950 border border-stone-800 flex flex-wrap items-center justify-between gap-3 shadow-inner">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold shadow-md"
-              style={{ backgroundColor: `${archetype.accentHex}20`, color: archetype.accentHex }}
-            >
-              {archetype.badgeEmoji}
-            </div>
-            <div>
-              <div className="text-xs font-mono uppercase tracking-wider text-stone-400">
-                Calculated Archetype
-              </div>
-              <div className="text-base font-serif font-bold text-stone-100 flex items-center gap-2">
-                <span>{archetype.name}</span>
-                <span
-                  className="text-xs font-mono px-2 py-0.5 rounded-full border"
-                  style={{
-                    color: archetype.accentHex,
-                    borderColor: `${archetype.accentHex}40`,
-                    backgroundColor: `${archetype.accentHex}10`,
-                  }}
-                >
-                  {ppd.toFixed(1)} PPD
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-right text-xs font-mono text-stone-400 space-y-0.5 self-end sm:self-auto">
-            <div>
-              <strong className="text-stone-200">{elapsedDays}</strong> {elapsedDays === 1 ? 'day' : 'days'} duration
-            </div>
-            <div className="text-[11px] text-stone-500">
-              {safePages} pages total
-            </div>
-          </div>
-        </div>
+        {/* Live Velocity & Archetype Telemetry Bar */}
+        <VelocityTelemetryBar
+          ppd={ppd}
+          elapsedDays={elapsedDays}
+          totalPages={safePages}
+        />
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Title and Author */}
