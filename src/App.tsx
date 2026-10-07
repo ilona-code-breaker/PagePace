@@ -15,6 +15,7 @@ import { MonthlyGoalTracker } from './components/MonthlyGoalTracker';
 import { MonthlyGoalWidget } from './components/MonthlyGoalWidget';
 import { ShareableArchetypeCardModal } from './components/ShareableArchetypeCardModal';
 import { DataPortabilityToolbar } from './components/DataPortabilityToolbar';
+import { CsvImportModal } from './components/CsvImportModal';
 import { getCurrentMonthKey } from './utils/goalUtils';
 import {
   Sparkles,
@@ -26,6 +27,7 @@ import {
   BookOpen,
   Award,
   Share2,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 const STORAGE_KEY = 'pagepace_books_v1';
@@ -92,6 +94,7 @@ export default function App() {
   });
 
   const [isShareCardOpen, setIsShareCardOpen] = useState<boolean>(false);
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState<boolean>(false);
 
   // Save books to localStorage
   useEffect(() => {
@@ -421,6 +424,15 @@ export default function App() {
               <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
                 <button
                   type="button"
+                  onClick={() => setIsCsvModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-stone-900 hover:bg-stone-850 text-stone-200 border border-stone-800 hover:border-stone-700 font-semibold text-xs sm:text-sm transition-colors flex items-center gap-1.5 shadow-sm"
+                  title="Import books from Goodreads CSV or custom spreadsheet"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-sky-400" />
+                  <span>Import CSV</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setIsShareCardOpen(true)}
                   className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold text-xs sm:text-sm transition-colors flex items-center gap-1.5"
                 >
@@ -465,6 +477,16 @@ export default function App() {
         books={books}
         isOpen={isShareCardOpen}
         onClose={() => setIsShareCardOpen(false)}
+      />
+
+      {/* Client-Side CSV Import Modal (Goodreads & Custom Spreadsheets) */}
+      <CsvImportModal
+        isOpen={isCsvModalOpen}
+        onClose={() => setIsCsvModalOpen(false)}
+        existingBooks={books}
+        onImportComplete={(updatedBooks) => {
+          handleDataImported({ books: updatedBooks, goals });
+        }}
       />
 
       {/* Footer */}

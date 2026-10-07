@@ -33,6 +33,7 @@ export interface BookEntry {
   review: string;
   genre?: string;
   format?: 'Physical' | 'E-Reader' | 'Audiobook' | 'Hybrid';
+  status?: 'read' | 'currently-reading' | 'to-read';
   coverUrl?: string;
   isbn?: string;
   publishedYear?: number;

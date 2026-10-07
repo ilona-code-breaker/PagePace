@@ -1,13 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { BookEntry, MonthlyGoal } from '../types/book';
 import { exportPagePaceData, validateAndParseImport } from '../utils/dataPortability';
+import { CsvImportModal } from './CsvImportModal';
 import {
   Download,
   Upload,
   AlertTriangle,
   CheckCircle2,
   X,
-  FileJson,
+  FileSpreadsheet,
   HardDrive,
   RefreshCw,
 } from 'lucide-react';
@@ -26,6 +27,7 @@ export const DataPortabilityToolbar: React.FC<DataPortabilityToolbarProps> = ({
   className = '',
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
   const [pendingImport, setPendingImport] = useState<{
     books: BookEntry[];
     goals: Record<string, MonthlyGoal>;
@@ -88,7 +90,7 @@ export const DataPortabilityToolbar: React.FC<DataPortabilityToolbarProps> = ({
 
   return (
     <div className={`flex items-center gap-2 flex-wrap ${className}`}>
-      {/* Hidden File Picker */}
+      {/* Hidden JSON File Picker */}
       <input
         ref={fileInputRef}
         type="file"
@@ -108,7 +110,7 @@ export const DataPortabilityToolbar: React.FC<DataPortabilityToolbarProps> = ({
         <span>Export Data</span>
       </button>
 
-      {/* Import Data Button */}
+      {/* Import JSON Button */}
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
@@ -116,8 +118,31 @@ export const DataPortabilityToolbar: React.FC<DataPortabilityToolbarProps> = ({
         title="Import reading history from a PagePace JSON backup"
       >
         <Upload className="w-3.5 h-3.5 text-emerald-400" />
-        <span>Import Data</span>
+        <span>Import JSON</span>
       </button>
+
+      {/* Import CSV Button */}
+      <button
+        type="button"
+        onClick={() => setIsCsvModalOpen(true)}
+        className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-200 border border-stone-800 hover:border-stone-700 text-xs font-semibold transition-all shadow-sm active:scale-95"
+        title="Import books from Goodreads CSV or custom spreadsheet"
+      >
+        <FileSpreadsheet className="w-3.5 h-3.5 text-sky-400" />
+        <span>Import CSV</span>
+      </button>
+
+      {/* CSV Import Modal */}
+      <CsvImportModal
+        isOpen={isCsvModalOpen}
+        onClose={() => setIsCsvModalOpen(false)}
+        existingBooks={books}
+        onImportComplete={(updatedBooks) => {
+          onDataImported({ books: updatedBooks, goals });
+          setSuccessToast(`Successfully imported books from CSV!`);
+          setTimeout(() => setSuccessToast(null), 3500);
+        }}
+      />
 
       {/* Success Feedback Toast */}
       {successToast && (
@@ -153,7 +178,7 @@ export const DataPortabilityToolbar: React.FC<DataPortabilityToolbarProps> = ({
         </div>
       )}
 
-      {/* Confirmation Overwrite Modal */}
+      {/* Confirmation Overwrite Modal for JSON */}
       {pendingImport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-md bg-stone-900 border border-amber-500/30 rounded-2xl shadow-2xl p-6 space-y-5">
