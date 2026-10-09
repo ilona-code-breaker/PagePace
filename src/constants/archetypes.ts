@@ -157,7 +157,7 @@ export const INITIAL_SAMPLE_BOOKS: BookEntry[] = [
     rating: 4.9,
     review:
       'Unstoppable velocity! Started on a Friday evening and couldn’t put it down until the final page. High-octane sci-fi brilliance.',
-    genre: 'Sci-Fi',
+    genre: 'Science Fiction',
     format: 'Physical',
     coverUrl: 'https://covers.openlibrary.org/b/id/8389658-M.jpg',
     isbn: '9780345539786',
@@ -179,7 +179,7 @@ export const INITIAL_SAMPLE_BOOKS: BookEntry[] = [
     rating: 4.8,
     review:
       'A triumph of scientific optimism and friendship! Once Rocky entered the scene, sleep was simply not an option.',
-    genre: 'Sci-Fi',
+    genre: 'Science Fiction',
     format: 'Physical',
     coverUrl: 'https://covers.openlibrary.org/b/id/11107872-M.jpg',
     isbn: '9780593135204',

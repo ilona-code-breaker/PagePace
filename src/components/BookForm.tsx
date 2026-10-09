@@ -11,6 +11,7 @@ import { VelocityTelemetryBar } from './VelocityTelemetryBar';
 import { generateArchetypeCelebration } from '../utils/celebrationGenerator';
 import { RatingInput } from './RatingInput';
 import { playCelebrationChime } from '../utils/sound';
+import { MASTER_GENRES, extractPrimaryGenre, extractGenres } from '../utils/genreMapper';
 import {
   searchKnowledgeBase,
   findExactOrBestMatch,
@@ -65,7 +66,7 @@ export const BookForm: React.FC<BookFormProps> = ({
   const [finishDate, setFinishDate] = useState(todayStr);
   const [rating, setRating] = useState<number>(4.4);
   const [review, setReview] = useState('');
-  const [genre, setGenre] = useState('Fiction');
+  const [genre, setGenre] = useState('Fantasy');
   const [format, setFormat] = useState<'Physical' | 'E-Reader' | 'Audiobook' | 'Hybrid'>('Physical');
   const [coverUrl, setCoverUrl] = useState<string | undefined>(undefined);
   const [isbn, setIsbn] = useState<string | undefined>(undefined);
@@ -103,7 +104,9 @@ export const BookForm: React.FC<BookFormProps> = ({
   ) => {
     setTitle(book.title);
     setAuthor(book.author);
-    setGenre(book.genre);
+    if (book.genre || book.title) {
+      setGenre(extractPrimaryGenre(book.genre || '', { title: book.title, author: book.author, fallback: 'Other / Custom' }));
+    }
     if (book.coverUrl) setCoverUrl(book.coverUrl);
     if (book.isbn) setIsbn(book.isbn);
     if (book.publisher) setPublisher(book.publisher);
@@ -296,21 +299,7 @@ export const BookForm: React.FC<BookFormProps> = ({
     onBookCreated(newBook);
   };
 
-  const genresList = [
-    'Fiction',
-    'Fantasy',
-    'Sci-Fi',
-    'Thriller / Mystery',
-    'Romance',
-    'Literary Fiction',
-    'Historical Fiction',
-    'Non-Fiction',
-    'Biography / Memoir',
-    'Dark Academia',
-    'Cozy Magical Realism',
-    'Philosophy',
-    'History',
-  ];
+  const genresList = MASTER_GENRES;
 
   const getArchetypeIcon = () => {
     switch (liveArchetype.id) {
