@@ -1,7 +1,6 @@
 import { BookEntry, ArchetypeDefinition } from '../types/book';
 import { getArchetypeByPPD } from './calculator';
 import { ARCHETYPES } from '../constants/archetypes';
-import { normalizeGenre } from './genreMapper';
 
 export interface UserReadingProfile {
   totalBooks: number;
@@ -45,7 +44,7 @@ export function calculateOverallProfile(books: BookEntry[]): UserReadingProfile 
   // Genre counts
   const genreCounts: Record<string, number> = {};
   books.forEach((b) => {
-    const g = normalizeGenre(b.genre);
+    const g = b.genre && b.genre.trim() ? b.genre.trim() : 'Fiction';
     genreCounts[g] = (genreCounts[g] || 0) + 1;
   });
 

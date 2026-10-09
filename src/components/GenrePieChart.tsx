@@ -2,30 +2,34 @@ import React, { useMemo } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { BookEntry } from '../types/book';
 import { PieChart as PieChartIcon, BookOpen, Layers } from 'lucide-react';
-import { GENRE_METADATA, MasterGenre, extractPrimaryGenre, isMasterGenre } from '../utils/genreMapper';
 
 interface GenrePieChartProps {
   books: BookEntry[];
   className?: string;
-  selectedGenre?: string | 'all';
-  onSelectGenre?: (genre: string | 'all') => void;
 }
+
+// PagePace palette: #10b981 (emerald), #06b6d4 (cyan), #ec4899 (pink), #f59e0b (amber), #8b5cf6 (violet)
+const GENRE_COLORS = [
+  '#10b981',
+  '#06b6d4',
+  '#ec4899',
+  '#f59e0b',
+  '#8b5cf6',
+  '#6366f1',
+  '#f97316',
+  '#14b8a6',
+  '#a855f7',
+  '#3b82f6',
+];
 
 interface GenreDataPoint {
   name: string;
   value: number; // book count
   percentage: number;
   totalPages: number;
-  color: string;
-  emoji?: string;
 }
 
-export const GenrePieChart: React.FC<GenrePieChartProps> = ({
-  books,
-  className = '',
-  selectedGenre = 'all',
-  onSelectGenre,
-}) => {
+export const GenrePieChart: React.FC<GenrePieChartProps> = ({ books, className = '' }) => {
   const { data, totalBooks, totalPages } = useMemo(() => {
     if (!books || books.length === 0) {
       return { data: [], totalBooks: 0, totalPages: 0 };
@@ -35,8 +39,7 @@ export const GenrePieChart: React.FC<GenrePieChartProps> = ({
     let pagesSum = 0;
 
     books.forEach((b) => {
-      const raw = b.genre && b.genre.trim() ? b.genre.trim() : '';
-      const g = raw ? (isMasterGenre(raw) ? raw : extractPrimaryGenre(raw)) : 'Other / Custom';
+      const g = b.genre && b.genre.trim() ? b.genre.trim() : 'Uncategorized';
       if (!genreMap[g]) {
         genreMap[g] = { count: 0, pages: 0 };
       }
@@ -47,17 +50,12 @@ export const GenrePieChart: React.FC<GenrePieChartProps> = ({
 
     const total = books.length;
     const sorted: GenreDataPoint[] = Object.entries(genreMap)
-      .map(([name, stats]) => {
-        const meta = GENRE_METADATA[name as MasterGenre];
-        return {
-          name,
-          value: stats.count,
-          percentage: Math.round((stats.count / total) * 1000) / 10, // 1 decimal e.g. 33.3%
-          totalPages: stats.pages,
-          color: meta?.color || '#57534e',
-          emoji: meta?.emoji,
-        };
-      })
+      .map(([name, stats]) => ({
+        name,
+        value: stats.count,
+        percentage: Math.round((stats.count / total) * 1000) / 10, // 1 decimal e.g. 33.3%
+        totalPages: stats.pages,
+      }))
       .sort((a, b) => b.value - a.value);
 
     return { data: sorted, totalBooks: total, totalPages: pagesSum };
@@ -86,10 +84,7 @@ export const GenrePieChart: React.FC<GenrePieChartProps> = ({
               className="w-2.5 h-2.5 rounded-full inline-block"
               style={{ backgroundColor: payload[0].color }}
             />
-            <span>
-              {item.emoji ? `${item.emoji} ` : ''}
-              {item.name}
-            </span>
+            <span>{item.name}</span>
           </div>
           <div className="text-stone-300 font-mono">
             {item.value} {item.value === 1 ? 'book' : 'books'} ({item.percentage}%)
@@ -107,31 +102,18 @@ export const GenrePieChart: React.FC<GenrePieChartProps> = ({
   const renderLegend = (props: any) => {
     const { payload } = props;
     return (
-      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 pt-3 text-xs">
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 pt-3 text-xs">
         {payload.map((entry: any, index: number) => {
           const item = data.find((d) => d.name === entry.value);
-          const isSelected = selectedGenre === entry.value;
           return (
-            <button
-              key={`legend-${index}`}
-              type="button"
-              onClick={() => onSelectGenre && onSelectGenre(isSelected ? 'all' : entry.value)}
-              className={`flex items-center gap-1.5 font-mono text-[11px] px-2 py-0.5 rounded-md transition-all ${
-                isSelected
-                  ? 'bg-stone-800 text-stone-100 ring-1 ring-amber-400 font-semibold'
-                  : selectedGenre !== 'all'
-                  ? 'opacity-40 hover:opacity-80 text-stone-400'
-                  : 'hover:bg-stone-800/60 text-stone-300'
-              } ${onSelectGenre ? 'cursor-pointer' : ''}`}
-              title={onSelectGenre ? `Filter library by ${entry.value}` : undefined}
-            >
+            <div key={`legend-${index}`} className="flex items-center gap-1.5 font-mono text-[11px]">
               <span
                 className="w-2.5 h-2.5 rounded-sm inline-block shrink-0"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="font-sans">{entry.value}</span>
+              <span className="text-stone-300 font-sans">{entry.value}</span>
               <span className="text-stone-500 font-mono">({item ? `${item.percentage}%` : ''})</span>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -149,40 +131,21 @@ export const GenrePieChart: React.FC<GenrePieChartProps> = ({
           <div>
             <h3 className="text-sm sm:text-base font-serif font-bold text-stone-100 flex items-center gap-2">
               Genre Distribution
-              {selectedGenre !== 'all' && (
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300 font-normal">
-                  Filtered: {selectedGenre}
-                </span>
-              )}
             </h3>
             <p className="text-[11px] text-stone-400">
               Breakdown across {totalBooks} {totalBooks === 1 ? 'book' : 'books'} and {data.length} genres
-              {onSelectGenre && ' · Click any genre slice to search & filter'}
             </p>
           </div>
         </div>
 
-        {/* Top Genre Badge or Clear Filter CTA */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          {selectedGenre !== 'all' && onSelectGenre && (
-            <button
-              type="button"
-              onClick={() => onSelectGenre('all')}
-              className="text-xs font-mono px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 transition-colors flex items-center gap-1"
-            >
-              <span>Clear Genre Filter</span>
-              <span className="font-bold">✕</span>
-            </button>
-          )}
-
-          {data[0] && selectedGenre === 'all' && (
-            <div className="text-xs font-mono px-2.5 py-1 rounded-lg bg-stone-950 border border-stone-800 text-stone-300 flex items-center gap-1.5">
-              <span className="text-stone-500">Top Genre:</span>
-              <strong className="text-amber-400">{data[0].name}</strong>
-              <span className="text-stone-400 font-normal">({data[0].percentage}%)</span>
-            </div>
-          )}
-        </div>
+        {/* Top Genre Badge */}
+        {data[0] && (
+          <div className="text-xs font-mono px-2.5 py-1 rounded-lg bg-stone-950 border border-stone-800 text-stone-300 self-start sm:self-auto flex items-center gap-1.5">
+            <span className="text-stone-500">Top Genre:</span>
+            <strong className="text-amber-400">{data[0].name}</strong>
+            <span className="text-stone-400 font-normal">({data[0].percentage}%)</span>
+          </div>
+        )}
       </div>
 
       {/* Donut Chart Visualization */}
@@ -198,26 +161,15 @@ export const GenrePieChart: React.FC<GenrePieChartProps> = ({
               paddingAngle={3}
               dataKey="value"
               animationDuration={800}
-              cursor={onSelectGenre ? 'pointer' : 'default'}
-              onClick={(entryData) => {
-                if (onSelectGenre && entryData && entryData.name) {
-                  onSelectGenre(selectedGenre === entryData.name ? 'all' : entryData.name);
-                }
-              }}
             >
-              {data.map((entry, index) => {
-                const isSelected = selectedGenre === entry.name;
-                const isDimmed = selectedGenre !== 'all' && !isSelected;
-                return (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={entry.color}
-                    opacity={isDimmed ? 0.3 : 1}
-                    stroke={isSelected ? '#ffffff' : '#0f1117'}
-                    strokeWidth={isSelected ? 3 : 2}
-                  />
-                );
-              })}
+              {data.map((_, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={GENRE_COLORS[index % GENRE_COLORS.length]}
+                  stroke="#0f1117"
+                  strokeWidth={2}
+                />
+              ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
             <Legend content={renderLegend} />

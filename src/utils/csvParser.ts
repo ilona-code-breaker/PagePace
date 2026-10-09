@@ -1,7 +1,6 @@
 import { BookEntry, ArchetypeId } from '../types/book';
 import { calculateElapsedDays, calculatePPD, getArchetypeByPPD, snapToPrecision01 } from './calculator';
 import { findExactOrBestMatch } from '../data/bookKnowledgeBase';
-import { extractGenres, formatGenresLabel, extractPrimaryGenre, MasterGenre } from './genreMapper';
 
 export interface CsvParseOptions {
   startDateStrategy: 'infer_date_added' | 'same_day' | 'estimate_pace';
@@ -192,17 +191,32 @@ export function cleanTitleString(title: string): string {
 }
 
 /**
- * Normalizes and standardizes genres to clean MasterGenre title case.
+ * Normalizes and standardizes genres to clean title case.
  */
 export function normalizeStandardGenre(genre: string): string {
-  if (!genre || !genre.trim()) return 'Other / Custom';
-  const primary = extractPrimaryGenre(genre, 'Other / Custom');
-  return primary;
+  const g = genre.trim();
+  const lower = g.toLowerCase();
+  if (lower === 'scifi' || lower === 'sci-fi' || lower === 'science fiction' || lower === 'science-fiction') {
+    return 'Sci-Fi';
+  }
+  if (lower === 'nonfiction' || lower === 'non-fiction') return 'Non-Fiction';
+  if (lower === 'historical-fiction' || lower === 'historical fiction') return 'Historical Fiction';
+  if (lower === 'ya dystopian' || lower === 'dystopian' || lower === 'dystopia') return 'YA Dystopian';
+  if (lower === 'lit fic' || lower === 'literary' || lower === 'literary fiction') return 'Literary Fiction';
+  if (lower === 'romance' || lower === 'romantasy') return 'Romance';
+  if (lower === 'fantasy') return 'Fantasy';
+  if (lower === 'thriller' || lower === 'mystery' || lower === 'crime') return 'Thriller';
+  if (lower === 'horror') return 'Horror';
+  if (lower === 'classics' || lower === 'classic') return 'Classics';
+  if (lower === 'young adult' || lower === 'ya') return 'Young Adult';
+
+  // Capitalize first letter
+  return g.charAt(0).toUpperCase() + g.slice(1);
 }
 
 /**
- * Checks incoming books against the built-in knowledge base, landmark canon, and bookshelf tags
- * to verify and populate standard genre tags (supporting smart intersections like Romantasy).
+ * Checks incoming books against the built-in knowledge base and bookshelf tags
+ * to verify and populate standard genre tags (e.g. 'Fantasy', 'Sci-Fi', 'Romance').
  */
 export function verifyAndPopulateGenre(
   title: string,
@@ -213,20 +227,31 @@ export function verifyAndPopulateGenre(
   // 1. Check internal knowledge base for verified match
   const kbMatch = findExactOrBestMatch(title);
   if (kbMatch && kbMatch.genre) {
-    const kbGenres = extractGenres(kbMatch.genre, { title, author });
-    return formatGenresLabel(kbGenres);
+    return normalizeStandardGenre(kbMatch.genre);
   }
 
   // 2. Parse raw genre / bookshelf string (e.g. Goodreads bookshelves: "fantasy, favorites, ya-fantasy")
-  const sources = [rawGenreField || '', rawShelf || ''].filter((s) => s.trim().length > 0);
-  if (sources.length > 0) {
-    const extracted = extractGenres(sources, { title, author, fallback: 'Other / Custom' });
-    return formatGenresLabel(extracted);
+  const combinedText = `${rawGenreField || ''} ${rawShelf || ''}`.toLowerCase();
+
+  if (combinedText.includes('romantasy')) return 'Romance';
+  if (combinedText.includes('sci-fi') || combinedText.includes('scifi') || combinedText.includes('science fiction') || combinedText.includes('space opera')) return 'Sci-Fi';
+  if (combinedText.includes('fantasy') || combinedText.includes('magic')) return 'Fantasy';
+  if (combinedText.includes('romance') || combinedText.includes('contemporary-romance')) return 'Romance';
+  if (combinedText.includes('thriller') || combinedText.includes('mystery') || combinedText.includes('crime') || combinedText.includes('suspense')) return 'Thriller';
+  if (combinedText.includes('horror')) return 'Horror';
+  if (combinedText.includes('dystopia') || combinedText.includes('dystopian')) return 'YA Dystopian';
+  if (combinedText.includes('historical fiction') || combinedText.includes('historical')) return 'Historical Fiction';
+  if (combinedText.includes('non-fiction') || combinedText.includes('nonfiction') || combinedText.includes('biography') || combinedText.includes('memoir') || combinedText.includes('self-help')) return 'Non-Fiction';
+  if (combinedText.includes('classic') || combinedText.includes('classics')) return 'Classics';
+  if (combinedText.includes('literary') || combinedText.includes('lit-fic')) return 'Literary Fiction';
+  if (combinedText.includes('young adult') || combinedText.includes('ya')) return 'Young Adult';
+
+  // 3. Fallback to clean raw string if specified, or 'Fiction'
+  if (rawGenreField && rawGenreField.trim()) {
+    return normalizeStandardGenre(rawGenreField.trim());
   }
 
-  // 3. Ground against landmark canon using title and author context (e.g. Dune -> Science Fiction)
-  const canonMatch = extractGenres([], { title, author, fallback: 'Other / Custom' });
-  return formatGenresLabel(canonMatch);
+  return 'Fiction';
 }
 
 /**
@@ -351,8 +376,8 @@ export function analyzeAndNormalizeCsv(
         missingPagesCount++;
       }
     } else {
-      // Find verified genre from knowledge base if genre was generic 'Fiction' or unassigned
-      if (genre === 'Fiction' || genre === 'Other / Custom') {
+      // Find verified genre from knowledge base if genre was generic 'Fiction'
+      if (genre === 'Fiction') {
         const match = findExactOrBestMatch(title);
         if (match?.genre) {
           genre = normalizeStandardGenre(match.genre);

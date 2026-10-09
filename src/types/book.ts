@@ -28,8 +28,6 @@ export interface ArchetypeDefinition {
 
 export type ReadingArchetype = ArchetypeDefinition;
 
-export type { MasterGenre } from '../utils/genreMapper';
-
 export interface BookEntry {
   id: string;
   title: string;
@@ -43,7 +41,6 @@ export interface BookEntry {
   rating: number; // 0.1 precision (e.g. 0.1 to 5.0)
   review: string;
   genre?: string;
-  genres?: import('../utils/genreMapper').MasterGenre[];
   format?: 'Physical' | 'E-Reader' | 'Audiobook' | 'Hybrid';
   coverUrl?: string;
   isbn?: string;
