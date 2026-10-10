@@ -9,6 +9,7 @@ import {
   CsvAnalysisResult,
   NormalizedCsvRow,
 } from '../utils/csvParser';
+import { enrichCsvGenres } from '../utils/enrichCsvGenres';
 import { ARCHETYPES } from '../constants/archetypes';
 import {
   Upload,
@@ -62,6 +63,9 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
 
   // Batch Progress State
   const [isImporting, setIsImporting] = useState(false);
+  const [autoEnrichGenres, setAutoEnrichGenres] = useState(true);
+  const [progressStage, setProgressStage] = useState<'parsing' | 'enriching' | null>(null);
+  const [progressTitle, setProgressTitle] = useState<string>('');
   const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -200,8 +204,24 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
       finalLibrary = Array.from(updatedMap.values());
     }
 
+    // Optional Master Genre Auto-Enrichment via Google Books / Open Library
+    let processedLibrary: BookEntry[] = finalLibrary;
+    if (autoEnrichGenres && finalLibrary.length > 0) {
+      setProgressStage('enriching');
+      const { enrichedBooks } = await enrichCsvGenres(finalLibrary, {
+        batchSize: 4,
+        onProgress: (p) => {
+          setImportProgress({ current: p.processed, total: p.total });
+          setProgressTitle(p.currentTitle || '');
+        },
+      });
+      processedLibrary = enrichedBooks;
+    }
+
     setIsImporting(false);
-    onImportComplete(finalLibrary);
+    setProgressStage(null);
+    setProgressTitle('');
+    onImportComplete(processedLibrary);
     onClose();
   };
 
@@ -443,6 +463,30 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                   </button>
                 </div>
               </div>
+
+              {/* Master Genre Auto-Enrichment Toggle */}
+              <div className="pt-2 border-t border-stone-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div className="space-y-0.5">
+                  <span className="text-stone-300 font-medium flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    Enrich Missing Genres (Master Genres):
+                  </span>
+                  <span className="text-[11px] text-stone-500 block">
+                    Auto-categorizes blank/generic genres into Fantasy, Sci-Fi, Romance, etc. via Google Books & Open Library.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAutoEnrichGenres(!autoEnrichGenres)}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 self-start sm:self-auto ${
+                    autoEnrichGenres
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      : 'bg-stone-900 text-stone-400 border border-stone-800 hover:text-stone-200'
+                  }`}
+                >
+                  {autoEnrichGenres ? 'Enabled (API Auto-lookup)' : 'Disabled (Use CSV Only)'}
+                </button>
+              </div>
             </div>
 
             {/* Deduplication Choice Panel */}
@@ -558,13 +602,28 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
             {isImporting && importProgress && (
               <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2">
                 <div className="flex items-center justify-between text-xs text-amber-300 font-mono">
-                  <span>Importing row {importProgress.current} of {importProgress.total}...</span>
-                  <span>{Math.round((importProgress.current / importProgress.total) * 100)}%</span>
+                  <span>
+                    {progressStage === 'enriching'
+                      ? `Enriching genres via Google Books API (${importProgress.current} / ${importProgress.total})...`
+                      : `Importing row ${importProgress.current} of ${importProgress.total}...`}
+                  </span>
+                  <span>
+                    {importProgress.total > 0
+                      ? `${Math.round((importProgress.current / importProgress.total) * 100)}%`
+                      : '0%'}
+                  </span>
                 </div>
+                {progressTitle && (
+                  <div className="text-[11px] text-stone-400 truncate font-sans">
+                    Inspecting metadata for: <em className="text-stone-200">{progressTitle}</em>
+                  </div>
+                )}
                 <div className="h-2 w-full bg-stone-900 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-amber-500 transition-all duration-150"
-                    style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
+                    style={{
+                      width: `${importProgress.total > 0 ? (importProgress.current / importProgress.total) * 100 : 0}%`,
+                    }}
                   />
                 </div>
               </div>

@@ -4,9 +4,12 @@ import { ARCHETYPES } from '../constants/archetypes';
 import { DataPortabilityToolbar } from './DataPortabilityToolbar';
 import { GenrePieChart } from './GenrePieChart';
 import { EditBookModal } from './EditBookModal';
+import { GenreBadge } from './GenreBadge';
+import { MASTER_GENRES, GENRE_METADATA, MasterGenre } from '../utils/genreMapper';
 import {
   Search,
   Filter,
+  Tag,
   ArrowUpDown,
   BookOpen,
   Calendar,
@@ -52,20 +55,50 @@ export const BookList: React.FC<BookListProps> = ({
 }) => {
   const [search, setSearch] = useState('');
   const [filterArchetype, setFilterArchetype] = useState<ArchetypeId | 'all'>('all');
+  const [filterGenre, setFilterGenre] = useState<string | 'all'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'ppd' | 'rating'>('date');
   const [showGenreChart, setShowGenreChart] = useState(true);
   const [editingBook, setEditingBook] = useState<BookEntry | null>(null);
+
+  // Compute unique genres with count breakdown present in the user's library
+  const libraryGenres = useMemo(() => {
+    const counts: Record<string, number> = {};
+    books.forEach((b) => {
+      const primary = b.genre?.trim();
+      if (primary) {
+        counts[primary] = (counts[primary] || 0) + 1;
+      }
+      if (b.genres && b.genres.length > 0) {
+        b.genres.forEach((g) => {
+          if (g !== primary) {
+            counts[g] = (counts[g] || 0) + 1;
+          }
+        });
+      }
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [books]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return books
       .filter((b) => {
+        // Multi-attribute search: Title, Author, Primary Genre, or Secondary Genres array
         const matchTitle = b.title.toLowerCase().includes(q);
         const matchAuthor = b.author ? b.author.toLowerCase().includes(q) : false;
-        const matchSearch = q === '' || matchTitle || matchAuthor;
+        const matchGenre = b.genre ? b.genre.toLowerCase().includes(q) : false;
+        const matchGenresArr = b.genres ? b.genres.some((g) => g.toLowerCase().includes(q)) : false;
+        const matchSearch = q === '' || matchTitle || matchAuthor || matchGenre || matchGenresArr;
 
         const matchArch = filterArchetype === 'all' || b.archetypeId === filterArchetype;
-        return matchSearch && matchArch;
+
+        // Dedicated Genre Filter
+        const matchGenreFilter =
+          filterGenre === 'all' ||
+          (b.genre ? b.genre.toLowerCase().includes(filterGenre.toLowerCase()) : false) ||
+          (b.genres ? b.genres.some((g) => g.toLowerCase() === filterGenre.toLowerCase()) : false);
+
+        return matchSearch && matchArch && matchGenreFilter;
       })
       .sort((a, b) => {
         if (sortBy === 'ppd') return b.ppd - a.ppd;
@@ -76,7 +109,7 @@ export const BookList: React.FC<BookListProps> = ({
           b.createdAt - a.createdAt
         );
       });
-  }, [books, search, filterArchetype, sortBy]);
+  }, [books, search, filterArchetype, filterGenre, sortBy]);
 
   const getArchetypeIcon = (id: ArchetypeId) => {
     switch (id) {
@@ -97,23 +130,29 @@ export const BookList: React.FC<BookListProps> = ({
     }
   };
 
-  // Helper to highlight search query within text
-  const renderHighlighted = (text: string, query: string) => {
+  // Helper to highlight search query within text (safe regex escaping)
+  const renderHighlighted = (text: string | undefined, query: string) => {
+    if (!text) return '';
     if (!query.trim()) return text;
-    const parts = text.split(new RegExp(`(${query.trim()})`, 'gi'));
-    return (
-      <>
-        {parts.map((part, i) =>
-          part.toLowerCase() === query.trim().toLowerCase() ? (
-            <mark key={i} className="bg-amber-500/30 text-amber-200 px-0.5 rounded">
-              {part}
-            </mark>
-          ) : (
-            part
-          )
-        )}
-      </>
-    );
+    const escaped = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    try {
+      const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+      return (
+        <>
+          {parts.map((part, i) =>
+            part.toLowerCase() === query.trim().toLowerCase() ? (
+              <mark key={i} className="bg-amber-500/30 text-amber-200 px-0.5 rounded">
+                {part}
+              </mark>
+            ) : (
+              part
+            )
+          )}
+        </>
+      );
+    } catch {
+      return text;
+    }
   };
 
   return (
@@ -163,7 +202,11 @@ export const BookList: React.FC<BookListProps> = ({
 
       {/* 1. Recharts Genre Pie Chart Component */}
       {showGenreChart && (
-        <GenrePieChart books={books} />
+        <GenrePieChart
+          books={books}
+          selectedGenre={filterGenre}
+          onSelectGenre={setFilterGenre}
+        />
       )}
 
       {/* Prominent Library Search & Filter Controls Bar */}
@@ -176,7 +219,7 @@ export const BookList: React.FC<BookListProps> = ({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search library by title or author (e.g. Andy Weir, Fourth Wing, Tomorrow)..."
+              placeholder="Search library by title, author, or genre (e.g. Andy Weir, Romantasy, Sci-Fi)..."
               className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 placeholder-stone-500 text-sm focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 transition-all"
             />
             {search && (
@@ -191,12 +234,28 @@ export const BookList: React.FC<BookListProps> = ({
             )}
           </div>
 
-          {/* Quick Search Status / Match Count Badge */}
+          {/* Quick Search Status / Match Count Badge & Active Filters */}
           <div className="flex items-center justify-between sm:justify-end gap-2 text-xs text-stone-400 shrink-0 font-mono">
-            {search ? (
-              <span className="px-2.5 py-1.5 rounded-lg bg-stone-950 border border-amber-500/30 text-amber-300">
-                Found {filtered.length} of {books.length} {filtered.length === 1 ? 'match' : 'matches'}
-              </span>
+            {search || filterGenre !== 'all' || filterArchetype !== 'all' ? (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="px-2.5 py-1.5 rounded-lg bg-stone-950 border border-amber-500/30 text-amber-300">
+                  {filtered.length} of {books.length} {filtered.length === 1 ? 'match' : 'matches'}
+                </span>
+                {(search || filterGenre !== 'all' || filterArchetype !== 'all') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch('');
+                      setFilterGenre('all');
+                      setFilterArchetype('all');
+                    }}
+                    className="px-2 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300 text-[11px] transition-colors"
+                    title="Reset all filters"
+                  >
+                    Reset All
+                  </button>
+                )}
+              </div>
             ) : (
               <span className="px-2.5 py-1.5 rounded-lg bg-stone-950 border border-stone-800 text-stone-400">
                 {books.length} {books.length === 1 ? 'book' : 'books'} archived
@@ -205,7 +264,7 @@ export const BookList: React.FC<BookListProps> = ({
           </div>
         </div>
 
-        {/* Secondary Row: Archetype Filter & Sort Controls */}
+        {/* Secondary Row: Archetype Filter & Sort / Genre Controls */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1 border-t border-stone-800/60">
           {/* Filter by Archetype (All 7 Tiers) */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
@@ -309,23 +368,104 @@ export const BookList: React.FC<BookListProps> = ({
             </button>
           </div>
 
-          {/* Sort Menu */}
-          <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
-            <span className="text-xs text-stone-500 flex items-center gap-1">
-              <ArrowUpDown className="w-3 h-3" />
-              Sort:
-            </span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-2.5 py-1.5 rounded-lg bg-stone-950 border border-stone-800 text-stone-300 text-xs focus:outline-none focus:border-amber-500/50"
-            >
-              <option value="date">Date Finished</option>
-              <option value="ppd">Pace (Highest PPD)</option>
-              <option value="rating">Rating (Highest)</option>
-            </select>
+          {/* Controls Cluster: Genre Select & Sort Menu */}
+          <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0 flex-wrap">
+            {/* Genre Filter Dropdown */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-stone-500 flex items-center gap-1">
+                <Tag className="w-3 h-3 text-stone-400" />
+                Genre:
+              </span>
+              <select
+                value={filterGenre}
+                onChange={(e) => setFilterGenre(e.target.value)}
+                className={`px-2.5 py-1.5 rounded-lg bg-stone-950 border text-xs focus:outline-none transition-colors ${
+                  filterGenre !== 'all'
+                    ? 'border-amber-500/60 text-amber-300 font-semibold bg-amber-500/10'
+                    : 'border-stone-800 text-stone-300 focus:border-amber-500/50'
+                }`}
+              >
+                <option value="all">All Genres ({books.length})</option>
+                {libraryGenres.length > 0 && (
+                  <optgroup label="Library Shelves">
+                    {libraryGenres.map(([g, count]) => (
+                      <option key={g} value={g}>
+                        {g} ({count})
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                <optgroup label="All Master Genres">
+                  {MASTER_GENRES.map((mg) => (
+                    <option key={mg} value={mg}>
+                      {mg}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+
+            {/* Sort Menu */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-stone-500 flex items-center gap-1">
+                <ArrowUpDown className="w-3 h-3" />
+                Sort:
+              </span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="px-2.5 py-1.5 rounded-lg bg-stone-950 border border-stone-800 text-stone-300 text-xs focus:outline-none focus:border-amber-500/50"
+              >
+                <option value="date">Date Finished</option>
+                <option value="ppd">Pace (Highest PPD)</option>
+                <option value="rating">Rating (Highest)</option>
+              </select>
+            </div>
           </div>
         </div>
+
+        {/* Quick Genre Filter Pills (Interactive One-Tap Filters) */}
+        {libraryGenres.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pt-1.5 border-t border-stone-800/40 text-xs">
+            <span className="text-[11px] text-stone-500 uppercase font-mono tracking-wider mr-1 shrink-0 flex items-center gap-1">
+              <Tag className="w-3 h-3 text-stone-500" />
+              Quick Genre:
+            </span>
+            <button
+              type="button"
+              onClick={() => setFilterGenre('all')}
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
+                filterGenre === 'all'
+                  ? 'bg-stone-800 text-stone-100 shadow-sm border border-stone-700'
+                  : 'text-stone-400 hover:text-stone-200'
+              }`}
+            >
+              All
+            </button>
+            {libraryGenres.map(([g, count]) => {
+              const isSelected = filterGenre === g;
+              const meta = GENRE_METADATA[g as MasterGenre];
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setFilterGenre(isSelected ? 'all' : g)}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 ring-1 ring-amber-400 font-semibold shadow-sm'
+                      : 'bg-stone-950/70 text-stone-400 hover:text-stone-200 border border-stone-800/80 hover:border-stone-700'
+                  }`}
+                  title={`Filter library by ${g}`}
+                >
+                  {meta?.emoji && <span className="text-[11px]">{meta.emoji}</span>}
+                  <span>{g}</span>
+                  <span className="text-[10px] font-mono text-stone-500">({count})</span>
+                  {isSelected && <span className="text-amber-400 text-[10px] ml-0.5">✕</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Book Grid */}
@@ -334,23 +474,52 @@ export const BookList: React.FC<BookListProps> = ({
           <BookOpen className="w-10 h-10 text-stone-600 mx-auto" />
           <div className="space-y-1">
             <h3 className="text-lg font-bold text-stone-200">
-              {search ? `No books matching "${search}"` : 'No books found'}
+              {search && filterGenre !== 'all'
+                ? `No books matching "${search}" in ${filterGenre}`
+                : filterGenre !== 'all'
+                ? `No books found in genre "${filterGenre}"`
+                : search
+                ? `No books matching "${search}"`
+                : 'No books found'}
             </h3>
             <p className="text-xs sm:text-sm text-stone-400 max-w-sm mx-auto">
-              {search
-                ? 'We could not find any books matching that title or author. Try a different keyword or clear the search filter.'
+              {search || filterGenre !== 'all' || filterArchetype !== 'all'
+                ? 'We could not find any books matching your selected filters. Try broadening your query or clearing specific genre/archetype filters.'
                 : 'Try adjusting your archetype filter, or track a new completed book!'}
             </p>
           </div>
 
-          <div className="flex items-center justify-center gap-3 pt-2">
+          <div className="flex items-center justify-center gap-2 pt-2 flex-wrap">
+            {filterGenre !== 'all' && (
+              <button
+                type="button"
+                onClick={() => setFilterGenre('all')}
+                className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold text-xs transition-colors flex items-center gap-1.5"
+              >
+                <Tag className="w-3.5 h-3.5" />
+                <span>Clear Genre ({filterGenre})</span>
+              </button>
+            )}
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="px-4 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-semibold text-xs transition-colors"
+                className="px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-semibold text-xs transition-colors"
               >
                 Clear Search Query
+              </button>
+            )}
+            {(search || filterGenre !== 'all' || filterArchetype !== 'all') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  setFilterGenre('all');
+                  setFilterArchetype('all');
+                }}
+                className="px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-stone-200 text-xs transition-colors"
+              >
+                Reset All Filters
               </button>
             )}
             <button
@@ -374,24 +543,32 @@ export const BookList: React.FC<BookListProps> = ({
               >
                 {/* Header Metadata */}
                 <div className="flex items-center justify-between text-xs text-stone-400">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-stone-300 flex items-center gap-1.5">
                       {getArchetypeIcon(book.archetypeId)}
                       {arch.shortName}
                     </span>
                     <span aria-hidden="true">·</span>
                     <span className="font-mono">{book.ppd.toFixed(1)} PPD</span>
-                    {book.genre && (
-                      <>
-                        <span aria-hidden="true">·</span>
-                        <span className="text-[11px] font-mono text-stone-400 px-1.5 py-0.2 rounded bg-stone-950 border border-stone-800">
-                          {book.genre}
-                        </span>
-                      </>
-                    )}
+
+                    <span aria-hidden="true">·</span>
+
+                    {/* Quick One-Click Reassignable Genre Badge */}
+                    <GenreBadge
+                      currentGenre={book.genre || 'Literary & Contemporary Fiction'}
+                      onGenreChange={(newGenre) => {
+                        if (onEditBook) {
+                          onEditBook({
+                            ...book,
+                            genre: newGenre,
+                            genres: [newGenre],
+                          });
+                        }
+                      }}
+                    />
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-stone-400">
+                  <div className="flex items-center gap-1.5 text-stone-400 shrink-0">
                     <span className="font-mono text-amber-400 font-bold">
                       ★ {book.rating.toFixed(1)}
                     </span>

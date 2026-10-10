@@ -10,6 +10,7 @@ import { generateArchetypeCelebration } from '../utils/celebrationGenerator';
 import { RatingInput } from './RatingInput';
 import { VelocityTelemetryBar } from './VelocityTelemetryBar';
 import { ARCHETYPES } from '../constants/archetypes';
+import { MASTER_GENRES } from '../utils/genreMapper';
 import {
   X,
   Check,
@@ -33,22 +34,7 @@ interface EditBookModalProps {
   onSave: (updatedBook: BookEntry) => void;
 }
 
-const COMMON_GENRES = [
-  'Fantasy',
-  'Sci-Fi',
-  'Romance',
-  'Thriller',
-  'Horror',
-  'Historical Fiction',
-  'Literary Fiction',
-  'Non-Fiction',
-  'Classics',
-  'YA Dystopian',
-  'Young Adult',
-  'Fiction',
-  'Mystery',
-  'Biography',
-];
+const COMMON_GENRES = MASTER_GENRES;
 
 export const EditBookModal: React.FC<EditBookModalProps> = ({
   book,
@@ -77,7 +63,7 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
       setTotalPages(book.totalPages || 350);
       setStartDate(book.startDate || '');
       setFinishDate(book.finishDate || '');
-      setGenre(book.genre || 'Fiction');
+      setGenre(book.genre || 'Literary & Contemporary Fiction');
       setFormat(book.format || 'Physical');
       setRating(book.rating || 4.0);
       setReview(book.review || '');
@@ -106,7 +92,7 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
       ppd,
       archetypeId: archetype.id,
       rating: snapToPrecision01(rating),
-      genre: genre.trim() || 'Fiction',
+      genre: genre.trim() || 'Literary & Contemporary Fiction',
       format,
       review: review.trim(),
       coverUrl: coverUrl.trim() || undefined,
@@ -254,7 +240,7 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
                       {g}
                     </option>
                   ))}
-                  {!COMMON_GENRES.includes(genre) && (
+                  {!(COMMON_GENRES as readonly string[]).includes(genre) && (
                     <option value={genre}>{genre}</option>
                   )}
                 </select>
