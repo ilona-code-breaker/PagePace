@@ -342,6 +342,7 @@ export default function App() {
             <CompletionSummaryCard
               book={selectedBook}
               onClose={() => setSelectedBook(null)}
+              onEdit={handleEditBook}
             />
           </section>
         )}

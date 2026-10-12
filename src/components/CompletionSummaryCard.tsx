@@ -3,6 +3,7 @@ import { BookEntry, ArchetypeDefinition } from '../types/book';
 import { ARCHETYPES } from '../constants/archetypes';
 import { generateSocialCaptionSnippet } from '../utils/socialCardGenerator';
 import { StoryCardCanvas } from './StoryCardCanvas';
+import { GenreBadge } from './GenreBadge';
 import {
   Calendar,
   Clock,
@@ -35,6 +36,7 @@ interface CompletionSummaryCardProps {
 export const CompletionSummaryCard: React.FC<CompletionSummaryCardProps> = ({
   book,
   onClose,
+  onEdit,
 }) => {
   const archetype: ArchetypeDefinition = ARCHETYPES[book.archetypeId] || ARCHETYPES['steady-cruiser'];
   const [activeTab, setActiveTab] = useState<'summary' | 'caption' | 'visualCard'>('summary');
@@ -173,7 +175,18 @@ export const CompletionSummaryCard: React.FC<CompletionSummaryCardProps> = ({
           {book.genre && (
             <>
               <span aria-hidden="true">·</span>
-              <span>{book.genre}</span>
+              <GenreBadge
+                currentGenre={book.genre}
+                onGenreChange={(newGenre) => {
+                  if (onEdit) {
+                    onEdit({
+                      ...book,
+                      genre: newGenre,
+                      genres: [newGenre],
+                    });
+                  }
+                }}
+              />
             </>
           )}
         </div>
