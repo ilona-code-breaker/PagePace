@@ -195,20 +195,93 @@ export function cleanTitleString(title: string): string {
  * Normalizes and standardizes genres to clean MacroGenre title case.
  */
 export function normalizeStandardGenre(genre: string): string {
-  if (!genre || !genre.trim()) return 'Literary & Contemporary Fiction';
-  const primary = extractPrimaryGenre(genre, 'Literary & Contemporary Fiction');
-  return primary;
+  if (!genre || !genre.trim()) return '';
+  const primary = extractPrimaryGenre(genre);
+  return primary || genre.trim();
 }
 
 /**
- * Checks incoming books against the built-in knowledge base, landmark canon, and bookshelf tags
+ * Strictly allowed shelf/genre/tag columns for genre extraction.
+ * Explicitly ignores headers, date fields, titles, reading history, and system metadata.
+ */
+export const ALLOWED_GENRE_COLUMNS = [
+  'bookshelves',
+  'bookshelves with positions',
+  'shelves',
+  'user_tags',
+  'user tags',
+  'tags',
+  'genre',
+  'genres',
+  'category',
+  'categories',
+  'subject',
+  'subjects',
+];
+
+/**
+ * Identifies strictly allowed shelf/genre/tag column indices in the CSV.
+ * Explicitly ignores CSV headers, date fields, titles, reading history, and system metadata.
+ */
+export function getGenreColumnIndices(rawHeaders: string[]): number[] {
+  const indices: number[] = [];
+  const ALLOWED_SET = new Set(ALLOWED_GENRE_COLUMNS);
+
+  const EXCLUDED_PATTERNS = [
+    /history/i,              // reading history, borrow_history, shelf_history, etc.
+    /date/i,                 // date read, date added, etc.
+    /title/i,                // title, book title
+    /author/i,               // author, creator
+    /isbn/i,                 // isbn, isbn13
+    /asin/i,                 // asin
+    /id\b/i,                 // book id
+    /rating/i,               // my rating, average rating
+    /review/i,               // my review
+    /note/i,                 // private notes
+    /page/i,                 // pages, num pages
+    /publisher/i,            // publisher
+    /year/i,                 // year published
+    /status/i,               // exclusive shelf, read status
+    /exclusive\s*shelf/i,    // exclusive shelf
+    /read\s*count/i,         // read count
+    /borrow/i,               // borrow_history
+    /purchase/i,             // purchase location
+  ];
+
+  rawHeaders.forEach((header, idx) => {
+    const clean = header.toLowerCase().trim();
+    if (!clean) return;
+
+    // Reject headers matching metadata patterns
+    if (EXCLUDED_PATTERNS.some((pat) => pat.test(clean))) {
+      return;
+    }
+
+    const normalized = clean.replace(/[-_ ]+/g, ' ');
+    if (
+      ALLOWED_SET.has(clean) ||
+      ALLOWED_SET.has(normalized) ||
+      ALLOWED_SET.has(clean.replace(/\s+/g, ''))
+    ) {
+      indices.push(idx);
+    }
+  });
+
+  return indices;
+}
+
+/**
+ * Checks incoming books against the built-in knowledge base, landmark canon, and shelf/tag columns
  * to verify and populate standard genre tags (supporting smart intersections like Romantasy).
+ *
+ * Strict Fix: Restricts genre extraction strictly to specific shelf/category columns
+ * (bookshelves, shelves, user_tags, volumeInfo.categories). Never accepts entire raw CSV rows
+ * or metadata columns (reading history, borrow_history, etc.).
  */
 export function verifyAndPopulateGenre(
   title: string,
   author?: string,
-  rawGenreField?: string,
-  rawShelf?: string
+  genreSources?: string | string[]
 ): string {
   // 1. Check internal knowledge base for verified match
   const kbMatch = findExactOrBestMatch(title);
@@ -217,16 +290,20 @@ export function verifyAndPopulateGenre(
     return formatGenresLabel(kbGenres);
   }
 
-  // 2. Parse raw genre / bookshelf string (e.g. Goodreads bookshelves: "fantasy, favorites, ya-fantasy")
-  const sources = [rawGenreField || '', rawShelf || ''].filter((s) => s.trim().length > 0);
+  // 2. Parse strictly provided genre sources (bookshelves, shelves, user_tags, etc.)
+  const sources = Array.isArray(genreSources)
+    ? genreSources.filter((s) => s && s.trim().length > 0)
+    : genreSources && genreSources.trim()
+    ? [genreSources.trim()]
+    : [];
+
   if (sources.length > 0) {
-    const extracted = extractGenres(sources, { title, author, fallback: 'Literary & Contemporary Fiction' });
+    const extracted = extractGenres(sources, { title, author });
     return formatGenresLabel(extracted);
   }
 
-  // 3. Ground against landmark canon using title and author context (e.g. Dune -> Sci-Fi & Dystopian)
-  const canonMatch = extractGenres([], { title, author, fallback: 'Literary & Contemporary Fiction' });
-  return formatGenresLabel(canonMatch);
+  // 3. If no structured match found, return empty string (zero fallback)
+  return '';
 }
 
 /**
@@ -274,10 +351,22 @@ export function analyzeAndNormalizeCsv(
   const isbn13Idx = findCol(['isbn13', 'isbn 13', 'isbn_13']);
   const isbnIdx = findCol(['isbn', 'identifier', 'asin']);
   const pagesIdx = findCol(['number of pages', 'pages', 'page count', 'total pages', 'num_pages']);
-  const shelfIdx = findCol(['exclusive shelf', 'shelf', 'bookshelves', 'status', 'read status']);
+  // Exclusive reading status shelf (read / currently-reading / to-read)
+  // Strictly avoids bookshelves, tags, or reading history
+  const findReadingShelfCol = (): number => {
+    const priority = ['exclusive shelf', 'read status', 'status', 'shelf'];
+    for (const p of priority) {
+      const idx = rawHeaders.findIndex(
+        (h) => (h === p || h.includes(p)) && !h.includes('book') && !h.includes('history') && !h.includes('tag')
+      );
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+  const shelfIdx = findReadingShelfCol();
   const dateReadIdx = findCol(['date read', 'date_read', 'date finished', 'read at', 'finish date', 'completed']);
   const dateAddedIdx = findCol(['date added', 'date_added', 'added at', 'start date', 'date started', 'created']);
-  const genreColIdx = findCol(['genre', 'genres', 'bookshelves', 'bookshelves with positions', 'tags', 'subject', 'category']);
+  const genreColumnIndices = getGenreColumnIndices(rawHeaders);
   const ratingIdx = findCol(['my rating', 'rating', 'star rating', 'user rating', 'stars']);
   const reviewIdx = findCol(['my review', 'review', 'notes', 'private notes', 'comments']);
   const publisherIdx = findCol(['publisher']);
@@ -332,10 +421,17 @@ export function analyzeAndNormalizeCsv(
     let totalPages = !isNaN(rawPages) && rawPages > 0 ? rawPages : 0;
     let hasAutoFilledPages = false;
 
-    // Genre verification & normalization
-    const rawGenreVal = genreColIdx !== -1 ? row[genreColIdx] : undefined;
-    const rawShelfVal = shelfIdx !== -1 ? row[shelfIdx] : undefined;
-    let genre = verifyAndPopulateGenre(title, author, rawGenreVal, rawShelfVal);
+    // Genre verification & normalization:
+    // Strictly target specific CSV shelf/category columns (bookshelves, shelves, user_tags).
+    // Never pass entire raw CSV row or metadata columns (reading history, borrow_history, dates, etc.)
+    const rowGenreValues: string[] = [];
+    for (const cIdx of genreColumnIndices) {
+      const val = row[cIdx];
+      if (val && typeof val === 'string' && val.trim()) {
+        rowGenreValues.push(val.trim());
+      }
+    }
+    let genre = verifyAndPopulateGenre(title, author, rowGenreValues);
 
     // Auto-fill page count fallback via local knowledge base if 0
     if (totalPages <= 0) {
@@ -351,8 +447,8 @@ export function analyzeAndNormalizeCsv(
         missingPagesCount++;
       }
     } else {
-      // Find verified genre from knowledge base if genre was generic 'Fiction' or unassigned
-      if (genre === 'Fiction' || genre === 'Other / Custom') {
+      // Find verified genre from knowledge base if genre was generic 'Fiction'
+      if (genre === 'Fiction') {
         const match = findExactOrBestMatch(title);
         if (match?.genre) {
           genre = normalizeStandardGenre(match.genre);

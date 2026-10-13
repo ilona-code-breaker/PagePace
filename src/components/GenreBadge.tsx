@@ -46,13 +46,8 @@ export const GenreBadge: React.FC<GenreBadgeProps> = ({
     };
   }, [isOpen]);
 
-  // Safe fallback to metadata if custom or unmapped string is passed
-  const meta = GENRE_METADATA[currentGenre as MacroGenre] || {
-    genre: 'Literary & Contemporary Fiction',
-    color: '#3b82f6',
-    emoji: '🏷️',
-    description: 'General reading category',
-  };
+  // Resolve metadata for the current genre or default to Historical Fiction & Classics
+  const meta = GENRE_METADATA[currentGenre as MacroGenre] || GENRE_METADATA['Historical Fiction & Classics'];
 
   const handleSelect = (genre: MacroGenre, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -99,7 +94,7 @@ export const GenreBadge: React.FC<GenreBadgeProps> = ({
         />
       </button>
 
-      {/* Popover Dropdown of all 9 Macro-Genres */}
+      {/* Popover Dropdown of all 8 Macro-Genres */}
       {isOpen && (
         <div
           className="absolute left-0 mt-1.5 w-64 sm:w-72 rounded-2xl bg-stone-950/95 border border-stone-800 shadow-2xl backdrop-blur-md p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-left"
@@ -107,7 +102,7 @@ export const GenreBadge: React.FC<GenreBadgeProps> = ({
         >
           <div className="px-3 py-1.5 border-b border-stone-800/80 flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-stone-400">
             <span>Reassign Genre</span>
-            <span className="text-amber-400 font-semibold">9 Pillars</span>
+            <span className="text-amber-400 font-semibold">8 Pillars</span>
           </div>
 
           <div className="py-1 max-h-72 overflow-y-auto space-y-0.5 custom-scrollbar">

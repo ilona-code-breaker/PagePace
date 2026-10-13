@@ -555,7 +555,7 @@ export const BookList: React.FC<BookListProps> = ({
 
                     {/* Quick One-Click Reassignable Genre Badge */}
                     <GenreBadge
-                      currentGenre={book.genre || 'Literary & Contemporary Fiction'}
+                      currentGenre={book.genre || 'Historical Fiction & Classics'}
                       onGenreChange={(newGenre) => {
                         if (onEditBook) {
                           onEditBook({

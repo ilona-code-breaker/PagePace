@@ -46,7 +46,9 @@ export function calculateOverallProfile(books: BookEntry[]): UserReadingProfile 
   const genreCounts: Record<string, number> = {};
   books.forEach((b) => {
     const g = normalizeGenre(b.genre);
-    genreCounts[g] = (genreCounts[g] || 0) + 1;
+    if (g) {
+      genreCounts[g] = (genreCounts[g] || 0) + 1;
+    }
   });
 
   const sortedGenres = Object.entries(genreCounts)

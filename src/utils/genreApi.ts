@@ -1,18 +1,22 @@
 /**
  * @file genreApi.ts
- * @description Client-side API integration for genre lookup and enrichment.
- * Queries Google Books API (with Open Library subject fallback) in the browser,
- * passing metadata through the MasterGenre normalizer with in-memory caching
- * and resilient timeout/error handling.
+ * @description Official API integration service for genre lookup and enrichment.
+ * Strictly queries Google Books API (`volumeInfo.categories`) with Open Library
+ * (`subjects` / `subject`) fallback.
+ *
+ * Adheres strictly to the 8 Macro-Genre architecture:
+ * - Looks only at official structured fields: volumeInfo.categories and doc.subject(s).
+ * - Never scans titles, descriptions, or raw text blobs that risk trap words like "history".
+ * - Returns null when no matching category is found (no generic fallback bucket).
  */
 
 import { MasterGenre, normalizeGenre } from './genreMapper';
 
 /**
  * In-memory cache for resolved genres to eliminate duplicate API round-trips
- * when parsing multi-row CSVs or re-rendering components.
+ * when parsing multi-row books or re-rendering components.
  */
-const genreCache = new Map<string, MasterGenre>();
+const genreCache = new Map<string, MasterGenre | null>();
 
 /**
  * Constructs a normalized cache key from title, author, and isbn.
@@ -25,7 +29,7 @@ function getCacheKey(title: string, author = '', isbn = ''): string {
 }
 
 /**
- * Cleans an ISBN by removing Goodreads wrapper syntax (e.g., ="" or dashes).
+ * Cleans an ISBN by removing wrapper syntax (e.g., ="" or dashes).
  */
 function sanitizeIsbn(raw?: string): string | undefined {
   if (!raw) return undefined;
@@ -34,23 +38,24 @@ function sanitizeIsbn(raw?: string): string | undefined {
 }
 
 /**
- * Queries Google Books API for volume categories and normalizes them into a MasterGenre.
- * Falls back to Open Library subjects if Google Books categories are empty, and defaults
- * to 'Literary & Contemporary Fiction' upon network error or lack of classification.
+ * Queries Google Books API for publisher categories (`volumeInfo.categories`) and normalizes
+ * them into one of the 8 MacroGenres.
+ * Falls back to Open Library subjects (`subjects` / `subject`) if Google Books categories are empty.
+ * Returns null if no match is found (zero fallback bucket).
  *
  * @param title Book title to search
  * @param author Optional book author to refine search accuracy
  * @param isbn Optional ISBN10 or ISBN13 for exact volume lookup
- * @returns Promise resolving to a standardized MasterGenre
+ * @returns Promise resolving to a standardized MasterGenre or null if no match
  */
 export async function fetchGenreByMetadata(
   title: string,
   author = '',
   isbn?: string
-): Promise<MasterGenre> {
+): Promise<MasterGenre | null> {
   const cleanTitle = (title || '').trim();
   if (!cleanTitle) {
-    return 'Literary & Contemporary Fiction';
+    return null;
   }
 
   const cleanIsbn = sanitizeIsbn(isbn);
@@ -58,10 +63,10 @@ export async function fetchGenreByMetadata(
 
   // 1. Return cached value if available
   if (genreCache.has(cacheKey)) {
-    return genreCache.get(cacheKey)!;
+    return genreCache.get(cacheKey) ?? null;
   }
 
-  // 2. Query Google Books API
+  // 2. Query Google Books API - Target official volumeInfo.categories ONLY
   try {
     let queryParam = '';
     if (cleanIsbn) {
@@ -89,40 +94,29 @@ export async function fetchGenreByMetadata(
     if (response.ok) {
       const data = await response.json();
       if (Array.isArray(data.items) && data.items.length > 0) {
-        // Find first item with volumeInfo categories
+        // Find first item with official publisher volumeInfo.categories
         for (const item of data.items) {
           const categories: string[] | undefined = item.volumeInfo?.categories;
           if (Array.isArray(categories) && categories.length > 0) {
             const resolvedGenre = normalizeGenre(categories);
-            // If the resolved genre is not the generic default, cache and return
-            if (resolvedGenre !== 'Literary & Contemporary Fiction') {
+            if (resolvedGenre) {
               genreCache.set(cacheKey, resolvedGenre);
               return resolvedGenre;
             }
           }
         }
-
-        // If categories were generic or missing, check description text for strong signals
-        const firstDescription: string | undefined = data.items[0]?.volumeInfo?.description;
-        if (firstDescription && firstDescription.length > 20) {
-          const fromDescription = normalizeGenre(firstDescription);
-          if (fromDescription !== 'Literary & Contemporary Fiction') {
-            genreCache.set(cacheKey, fromDescription);
-            return fromDescription;
-          }
-        }
       }
     }
   } catch {
-    // Network failure, timeout, or rate-limiting; continue to Open Library fallback
+    // Network failure, timeout, or rate-limiting; proceed to Open Library subjects fallback
   }
 
-  // 3. Secondary Fallback: Open Library Subjects API
+  // 3. Fallback: Open Library API - Target official subjects array ONLY
   try {
     const olQuery = cleanIsbn
       ? `isbn=${encodeURIComponent(cleanIsbn)}`
       : `q=${encodeURIComponent(`${cleanTitle} ${author}`.trim())}`;
-    const openLibUrl = `https://openlibrary.org/search.json?${olQuery}&limit=2`;
+    const openLibUrl = `https://openlibrary.org/search.json?${olQuery}&fields=title,author_name,subject,subject_facet&limit=2`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3500);
@@ -147,8 +141,10 @@ export async function fetchGenreByMetadata(
 
         if (rawSubjects.length > 0) {
           const resolvedGenre = normalizeGenre(rawSubjects);
-          genreCache.set(cacheKey, resolvedGenre);
-          return resolvedGenre;
+          if (resolvedGenre) {
+            genreCache.set(cacheKey, resolvedGenre);
+            return resolvedGenre;
+          }
         }
       }
     }
@@ -156,10 +152,9 @@ export async function fetchGenreByMetadata(
     // Gracefully handle Open Library error
   }
 
-  // 4. Default fallback when no specific category is identified
-  const fallbackGenre: MasterGenre = 'Literary & Contemporary Fiction';
-  genreCache.set(cacheKey, fallbackGenre);
-  return fallbackGenre;
+  // 4. No match found: return null to isolate missing/unmatched metadata (zero fallback)
+  genreCache.set(cacheKey, null);
+  return null;
 }
 
 /**

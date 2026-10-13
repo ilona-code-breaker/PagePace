@@ -36,13 +36,19 @@ export const GenrePieChart: React.FC<GenrePieChartProps> = ({
 
     books.forEach((b) => {
       const raw = b.genre && b.genre.trim() ? b.genre.trim() : '';
-      const g = raw ? (isMasterGenre(raw) ? raw : extractPrimaryGenre(raw)) : 'Other / Custom';
-      if (!genreMap[g]) {
-        genreMap[g] = { count: 0, pages: 0 };
+      const g = raw
+        ? isMasterGenre(raw)
+          ? raw
+          : extractPrimaryGenre(raw)
+        : null;
+      if (g) {
+        if (!genreMap[g]) {
+          genreMap[g] = { count: 0, pages: 0 };
+        }
+        genreMap[g].count += 1;
+        genreMap[g].pages += b.totalPages || 0;
+        pagesSum += b.totalPages || 0;
       }
-      genreMap[g].count += 1;
-      genreMap[g].pages += b.totalPages || 0;
-      pagesSum += b.totalPages || 0;
     });
 
     const total = books.length;

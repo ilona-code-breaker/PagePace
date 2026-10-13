@@ -187,26 +187,32 @@ export async function enrichCsvGenres<T extends EnrichableBook>(
     const batchPromises = currentBatchIndices.map(async (bookIdx) => {
       const originalBook = books[bookIdx];
       try {
-        const resolvedGenre: MasterGenre = await fetchGenreByMetadata(
+        const resolvedGenre: MasterGenre | null = await fetchGenreByMetadata(
           originalBook.title,
           originalBook.author || '',
           originalBook.isbn
         );
 
-        const wasUpdated = isGenericOrEmptyGenre(originalBook.genre) || resolvedGenre !== originalBook.genre;
-        if (wasUpdated) {
-          enrichedCount++;
+        if (resolvedGenre) {
+          const wasUpdated = isGenericOrEmptyGenre(originalBook.genre) || resolvedGenre !== originalBook.genre;
+          if (wasUpdated) {
+            enrichedCount++;
+          }
+          result[bookIdx] = {
+            ...originalBook,
+            genre: resolvedGenre,
+          };
+        } else {
+          result[bookIdx] = {
+            ...originalBook,
+            genre: originalBook.genre?.trim() || '',
+          };
         }
-
-        result[bookIdx] = {
-          ...originalBook,
-          genre: resolvedGenre,
-        };
       } catch {
         // Fallback gracefully on item error
         result[bookIdx] = {
           ...originalBook,
-          genre: originalBook.genre?.trim() || 'Literary & Contemporary Fiction',
+          genre: originalBook.genre?.trim() || '',
         };
       } finally {
         processedCount++;

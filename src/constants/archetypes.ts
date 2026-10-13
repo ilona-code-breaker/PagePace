@@ -223,7 +223,7 @@ export const INITIAL_SAMPLE_BOOKS: BookEntry[] = [
     rating: 4.4,
     review:
       'A gorgeous exploration of collaborative art, friendship, video games, and grief over decades. Such a steady, fulfilling rhythm.',
-    genre: 'Literary & Contemporary Fiction',
+    genre: 'Historical Fiction & Classics',
     format: 'E-Reader',
     coverUrl: 'https://covers.openlibrary.org/b/id/12749457-M.jpg',
     isbn: '9780593321201',

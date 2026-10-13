@@ -11,26 +11,7 @@ export interface ApiBookMetadata {
   description?: string;
 }
 
-/**
- * Normalizes category strings from APIs into clean primary genres.
- */
-function normalizeGenre(categories?: string[] | string): string {
-  if (!categories) return 'Fiction';
-  const catStr = Array.isArray(categories) ? categories.join(' ').toLowerCase() : categories.toLowerCase();
-
-  if (catStr.includes('fantasy') || catStr.includes('magic')) return 'Fantasy';
-  if (catStr.includes('science fiction') || catStr.includes('sci-fi') || catStr.includes('space')) return 'Sci-Fi';
-  if (catStr.includes('thriller') || catStr.includes('mystery') || catStr.includes('crime') || catStr.includes('detective')) return 'Thriller / Mystery';
-  if (catStr.includes('romance') || catStr.includes('love')) return 'Romance';
-  if (catStr.includes('historical')) return 'Historical Fiction';
-  if (catStr.includes('biography') || catStr.includes('memoir') || catStr.includes('autobiography')) return 'Biography / Memoir';
-  if (catStr.includes('philosophy')) return 'Philosophy';
-  if (catStr.includes('history')) return 'History';
-  if (catStr.includes('nonfiction') || catStr.includes('non-fiction') || catStr.includes('self-help') || catStr.includes('psychology')) return 'Non-Fiction';
-  if (catStr.includes('literary') || catStr.includes('literature')) return 'Literary Fiction';
-
-  return 'Fiction';
-}
+import { normalizeGenre } from '../utils/genreMapper';
 
 /**
  * Checks if input is an ISBN (10 or 13 digits, optionally with dashes).
@@ -96,7 +77,7 @@ export async function searchGoogleBooks(query: string): Promise<ApiBookMetadata[
         title: info.title || 'Untitled',
         author: authors,
         totalPages: Math.max(10, pageCount),
-        genre: normalizeGenre(info.categories),
+        genre: normalizeGenre(info.categories) || '',
         coverUrl,
         isbn,
         publishedYear,
@@ -120,7 +101,7 @@ export async function searchOpenLibrary(query: string): Promise<ApiBookMetadata[
     const isIsbn = isIsbnQuery(query);
     const clean = isIsbn ? extractCleanIsbn(query) : query.trim();
     const param = isIsbn ? `isbn=${encodeURIComponent(clean)}` : `q=${encodeURIComponent(clean)}`;
-    const url = `https://openlibrary.org/search.json?${param}&limit=6`;
+    const url = `https://openlibrary.org/search.json?${param}&fields=title,author_name,subject,number_of_pages_median,number_of_pages,cover_i,isbn,first_publish_year,publisher&limit=6`;
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 4500);
@@ -155,7 +136,7 @@ export async function searchOpenLibrary(query: string): Promise<ApiBookMetadata[
         title: doc.title || 'Untitled',
         author: authors,
         totalPages: Math.max(10, pageCount),
-        genre: normalizeGenre(doc.subject),
+        genre: normalizeGenre(doc.subject) || '',
         coverUrl,
         isbn: Array.isArray(doc.isbn) ? doc.isbn[0] : undefined,
         publishedYear: doc.first_publish_year,
