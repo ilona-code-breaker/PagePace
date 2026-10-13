@@ -46,8 +46,8 @@ export const GenreBadge: React.FC<GenreBadgeProps> = ({
     };
   }, [isOpen]);
 
-  // Resolve metadata for the current genre or default to Historical Fiction & Classics
-  const meta = GENRE_METADATA[currentGenre as MacroGenre] || GENRE_METADATA['Historical Fiction & Classics'];
+  // Resolve metadata for the current genre or default to Historical Fiction
+  const meta = GENRE_METADATA[currentGenre as MacroGenre] || GENRE_METADATA['Historical Fiction'] || Object.values(GENRE_METADATA)[0];
 
   const handleSelect = (genre: MacroGenre, e: React.MouseEvent) => {
     e.stopPropagation();

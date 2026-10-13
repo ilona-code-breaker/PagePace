@@ -201,7 +201,7 @@ export const INITIAL_SAMPLE_BOOKS: BookEntry[] = [
     rating: 4.7,
     review:
       'Gained serious speed with every new husband! The climax was totally engrossing and left me breathless.',
-    genre: 'Historical Fiction & Classics',
+    genre: 'Historical Fiction',
     format: 'Physical',
     coverUrl: 'https://covers.openlibrary.org/b/id/8431180-M.jpg',
     isbn: '9781501161933',
@@ -223,7 +223,7 @@ export const INITIAL_SAMPLE_BOOKS: BookEntry[] = [
     rating: 4.4,
     review:
       'A gorgeous exploration of collaborative art, friendship, video games, and grief over decades. Such a steady, fulfilling rhythm.',
-    genre: 'Historical Fiction & Classics',
+    genre: 'Romance',
     format: 'E-Reader',
     coverUrl: 'https://covers.openlibrary.org/b/id/12749457-M.jpg',
     isbn: '9780593321201',
@@ -245,7 +245,7 @@ export const INITIAL_SAMPLE_BOOKS: BookEntry[] = [
     rating: 4.5,
     review:
       'The coziest high-fantasy book ever written. Hot coffee, cinnamon rolls, and zero high-stress battles. Absolute perfection.',
-    genre: 'Fantasy & Romantasy',
+    genre: 'Fantasy',
     format: 'Physical',
     coverUrl: 'https://covers.openlibrary.org/b/id/12836263-M.jpg',
     isbn: '9781250886088',
@@ -267,7 +267,7 @@ export const INITIAL_SAMPLE_BOOKS: BookEntry[] = [
     rating: 4.6,
     review:
       'Count Rostov’s wit and elegance in the Hotel Metropol made every paragraph worth lingering over. Unrushed, luxurious storytelling.',
-    genre: 'Historical Fiction & Classics',
+    genre: 'Historical Fiction',
     format: 'Physical',
     coverUrl: 'https://covers.openlibrary.org/b/id/8315182-M.jpg',
     isbn: '9780735221079',
@@ -289,7 +289,7 @@ export const INITIAL_SAMPLE_BOOKS: BookEntry[] = [
     rating: 4.2,
     review:
       'Read 10-15 pages each night with a cup of chamomile tea. Melancholy yet deeply comforting café time travel.',
-    genre: 'Fantasy & Romantasy',
+    genre: 'Fantasy',
     format: 'Physical',
     coverUrl: 'https://covers.openlibrary.org/b/id/10189912-M.jpg',
     isbn: '9781335430991',

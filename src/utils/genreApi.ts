@@ -4,19 +4,21 @@
  * Strictly queries Google Books API (`volumeInfo.categories`) with Open Library
  * (`subjects` / `subject`) fallback.
  *
- * Adheres strictly to the 8 Macro-Genre architecture:
+ * Adheres strictly to the 11 Macro-Genre architecture:
  * - Looks only at official structured fields: volumeInfo.categories and doc.subject(s).
+ * - Multi-genre support: extracts full MacroGenre[] array or single primary genre.
  * - Never scans titles, descriptions, or raw text blobs that risk trap words like "history".
- * - Returns null when no matching category is found (no generic fallback bucket).
+ * - Returns null / [] when no matching category is found (no generic fallback bucket).
  */
 
-import { MasterGenre, normalizeGenre } from './genreMapper';
+import { MasterGenre, normalizeGenre, normalizeGenres } from './genreMapper';
 
 /**
- * In-memory cache for resolved genres to eliminate duplicate API round-trips
+ * In-memory cache for resolved primary genres to eliminate duplicate API round-trips
  * when parsing multi-row books or re-rendering components.
  */
 const genreCache = new Map<string, MasterGenre | null>();
+const multiGenreCache = new Map<string, MasterGenre[]>();
 
 /**
  * Constructs a normalized cache key from title, author, and isbn.
@@ -39,31 +41,26 @@ function sanitizeIsbn(raw?: string): string | undefined {
 
 /**
  * Queries Google Books API for publisher categories (`volumeInfo.categories`) and normalizes
- * them into one of the 8 MacroGenres.
+ * them into an array of our exact 11 MacroGenres (`MacroGenre[]`).
  * Falls back to Open Library subjects (`subjects` / `subject`) if Google Books categories are empty.
- * Returns null if no match is found (zero fallback bucket).
- *
- * @param title Book title to search
- * @param author Optional book author to refine search accuracy
- * @param isbn Optional ISBN10 or ISBN13 for exact volume lookup
- * @returns Promise resolving to a standardized MasterGenre or null if no match
+ * Returns empty array [] if no match is found (zero fallback bucket).
  */
-export async function fetchGenreByMetadata(
+export async function fetchGenresByMetadata(
   title: string,
   author = '',
   isbn?: string
-): Promise<MasterGenre | null> {
+): Promise<MasterGenre[]> {
   const cleanTitle = (title || '').trim();
   if (!cleanTitle) {
-    return null;
+    return [];
   }
 
   const cleanIsbn = sanitizeIsbn(isbn);
   const cacheKey = getCacheKey(cleanTitle, author, cleanIsbn);
 
   // 1. Return cached value if available
-  if (genreCache.has(cacheKey)) {
-    return genreCache.get(cacheKey) ?? null;
+  if (multiGenreCache.has(cacheKey)) {
+    return multiGenreCache.get(cacheKey) || [];
   }
 
   // 2. Query Google Books API - Target official volumeInfo.categories ONLY
@@ -94,15 +91,20 @@ export async function fetchGenreByMetadata(
     if (response.ok) {
       const data = await response.json();
       if (Array.isArray(data.items) && data.items.length > 0) {
-        // Find first item with official publisher volumeInfo.categories
+        // Collect official publisher volumeInfo.categories
+        const allCategories: string[] = [];
         for (const item of data.items) {
           const categories: string[] | undefined = item.volumeInfo?.categories;
-          if (Array.isArray(categories) && categories.length > 0) {
-            const resolvedGenre = normalizeGenre(categories);
-            if (resolvedGenre) {
-              genreCache.set(cacheKey, resolvedGenre);
-              return resolvedGenre;
-            }
+          if (Array.isArray(categories)) {
+            allCategories.push(...categories);
+          }
+        }
+        if (allCategories.length > 0) {
+          const resolved = normalizeGenres(allCategories);
+          if (resolved.length > 0) {
+            multiGenreCache.set(cacheKey, resolved);
+            genreCache.set(cacheKey, resolved[0]);
+            return resolved;
           }
         }
       }
@@ -140,10 +142,11 @@ export async function fetchGenreByMetadata(
         ];
 
         if (rawSubjects.length > 0) {
-          const resolvedGenre = normalizeGenre(rawSubjects);
-          if (resolvedGenre) {
-            genreCache.set(cacheKey, resolvedGenre);
-            return resolvedGenre;
+          const resolved = normalizeGenres(rawSubjects);
+          if (resolved.length > 0) {
+            multiGenreCache.set(cacheKey, resolved);
+            genreCache.set(cacheKey, resolved[0]);
+            return resolved;
           }
         }
       }
@@ -152,9 +155,37 @@ export async function fetchGenreByMetadata(
     // Gracefully handle Open Library error
   }
 
-  // 4. No match found: return null to isolate missing/unmatched metadata (zero fallback)
+  // 4. No match found: return empty array to isolate missing/unmatched metadata (zero fallback)
+  multiGenreCache.set(cacheKey, []);
   genreCache.set(cacheKey, null);
-  return null;
+  return [];
+}
+
+/**
+ * Queries Google Books API for publisher categories (`volumeInfo.categories`) and normalizes
+ * them into a single primary MacroGenre.
+ * Falls back to Open Library subjects (`subjects` / `subject`) if Google Books categories are empty.
+ * Returns null if no match is found (zero fallback bucket).
+ */
+export async function fetchGenreByMetadata(
+  title: string,
+  author = '',
+  isbn?: string
+): Promise<MasterGenre | null> {
+  const cleanTitle = (title || '').trim();
+  if (!cleanTitle) {
+    return null;
+  }
+
+  const cleanIsbn = sanitizeIsbn(isbn);
+  const cacheKey = getCacheKey(cleanTitle, author, cleanIsbn);
+
+  if (genreCache.has(cacheKey)) {
+    return genreCache.get(cacheKey) ?? null;
+  }
+
+  const genres = await fetchGenresByMetadata(cleanTitle, author, isbn);
+  return genres.length > 0 ? genres[0] : null;
 }
 
 /**
@@ -162,4 +193,5 @@ export async function fetchGenreByMetadata(
  */
 export function clearGenreCache(): void {
   genreCache.clear();
+  multiGenreCache.clear();
 }
