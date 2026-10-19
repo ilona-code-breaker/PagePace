@@ -3,7 +3,7 @@
  * Principal Frontend Architecture - Official API-Driven Multi-Genre Pipeline
  *
  * Architecture Principles:
- * 1. Strict 11 Macro-Genres Only:
+ * 1. Strict Macro-Genres Taxonomy:
  *    - 'Fantasy'
  *    - 'Romantasy'
  *    - 'Sci-Fi & Dystopian'
@@ -15,13 +15,14 @@
  *    - 'Horror'
  *    - 'Non-Fiction, Bio & History'
  *    - 'Graphic Novels, Manga'
- *    (NO fallback buckets like 'Other' or 'Contemporary Fiction'. Unmapped metadata returns [] / null).
+ *    - 'Unassigned' (Extra category for unmapped subjects or empty API payloads so users can assign their own genre)
  *
  * 2. Multi-Genre Assignment Array (MacroGenre[]):
  *    - A single book CAN and SHOULD have multiple genres assigned if multiple distinct subject
  *      signals exist in the API payload.
  *    - Example 1: ["Fantasy", "Romance", "Magic", "Fae"] -> ['Fantasy', 'Romantasy', 'Romance']
  *    - Example 2: ["Science Fiction", "Dystopian", "Classics"] -> ['Sci-Fi & Dystopian', 'Classics']
+ *    - Unmapped / empty payloads -> ['Unassigned']
  *    - Deduplicated and canonically sorted.
  *
  * 3. Official API Field Targeting Only:
@@ -31,7 +32,7 @@
  */
 
 // ============================================================================
-// 1. STRICT 11-PILLAR MACRO-GENRE TAXONOMY
+// 1. STRICT MACRO-GENRE TAXONOMY
 // ============================================================================
 
 export type MacroGenre =
@@ -45,7 +46,8 @@ export type MacroGenre =
   | 'Thriller, Mystery & Crime'
   | 'Horror'
   | 'Non-Fiction, Bio & History'
-  | 'Graphic Novels, Manga';
+  | 'Graphic Novels, Manga'
+  | 'Unassigned';
 
 export const MACRO_GENRES: readonly MacroGenre[] = [
   'Fantasy',
@@ -59,9 +61,10 @@ export const MACRO_GENRES: readonly MacroGenre[] = [
   'Horror',
   'Non-Fiction, Bio & History',
   'Graphic Novels, Manga',
+  'Unassigned',
 ] as const;
 
-// Set for O(1) membership validation
+// Set for O(1) membership validation (case-insensitive aware)
 const MACRO_GENRE_SET: ReadonlySet<string> = new Set<string>(MACRO_GENRES);
 
 export function isMacroGenre(value: unknown): value is MacroGenre {
@@ -151,6 +154,18 @@ export const GENRE_METADATA: Record<string, GenreMeta> = {
     emoji: '🎨',
     description: 'Manga, graphic novels, comic books, and webtoons.',
   },
+  'Unassigned': {
+    genre: 'Unassigned',
+    color: '#a8a29e', // Warm stone / neutral gray
+    emoji: '🏷️',
+    description: 'Unassigned genre — click badge or edit book to assign a macro-genre.',
+  },
+  'unassigned': {
+    genre: 'Unassigned',
+    color: '#a8a29e',
+    emoji: '🏷️',
+    description: 'Unassigned genre — click badge or edit book to assign a macro-genre.',
+  },
   // Legacy aliases for backward compatibility with previously stored books
   'Fantasy & Romantasy': {
     genre: 'Fantasy',
@@ -205,18 +220,13 @@ const NOISE_TOKENS: ReadonlySet<string> = new Set([
   'owned',
   'books',
   'default',
-  'unclassified',
 ]);
 
-/**
- * Checks if a string is administrative metadata noise.
- */
 function isNoiseToken(str: string): boolean {
   const lower = str.trim().toLowerCase();
   if (!lower) return true;
   if (NOISE_TOKENS.has(lower)) return true;
 
-  // Normalized alphanumeric check (e.g. "borrow_history" -> "borrowhistory")
   const stripped = lower.replace(/[-_ ]/g, '');
   if (
     stripped === 'borrowhistory' ||
@@ -240,29 +250,15 @@ interface GenreRule {
   patterns: RegExp[];
 }
 
-/**
- * Case-insensitive regex patterns matching the exact dictionary triggers specified:
- * - Fantasy: "fantasy", "magic", "fae", "witches", "dragons", "high fantasy", "epic fantasy"
- * - Romantasy: "romantasy", "fantasy romance", "paranormal romance", "romantic fantasy"
- * - Sci-Fi & Dystopian: "science fiction", "sci-fi", "scifi", "dystopian", "dystopia", "cyberpunk", "space opera", "post-apocalyptic", "time travel"
- * - Romance: "romance", "romantic", "love story", "contemporary romance", "rom-com", "romcom"
- * - Young Adult: "young adult", "ya", "teen", "coming of age"
- * - Historical Fiction: "historical fiction", "historical", "period drama", "wwii", "victorian"
- * - Classics: "classics", "classic literature", "literary classics"
- * - Thriller, Mystery & Crime: "thriller", "mystery", "crime", "suspense", "detective", "noir", "true crime"
- * - Horror: "horror", "gothic", "supernatural", "haunted", "spooky"
- * - Non-Fiction, Bio & History: "non-fiction", "nonfiction", "biography", "autobiography", "memoir", "history", "psychology", "self-help", "science", "philosophy"
- * - Graphic Novels, Manga: "manga", "graphic novel", "comic", "comics", "webtoon"
- */
 const GENRE_RULES: readonly GenreRule[] = [
   // 1. Romantasy (Explicit multi-word triggers)
   {
     genre: 'Romantasy',
     patterns: [
       /\bromantasy\b/i,
-      /\bfantasy\s+romance\b/i,
-      /\bparanormal\s+romance\b/i,
-      /\bromantic\s+fantasy\b/i,
+      /\bfantasy[\s-_]+romance\b/i,
+      /\bparanormal[\s-_]+romance\b/i,
+      /\bromantic[\s-_]+fantasy\b/i,
     ],
   },
 
@@ -270,14 +266,18 @@ const GENRE_RULES: readonly GenreRule[] = [
   {
     genre: 'Fantasy',
     patterns: [
-      /\bhigh\s+fantasy\b/i,
-      /\bepic\s+fantasy\b/i,
+      /\bhigh[\s-_]+fantasy\b/i,
+      /\bepic[\s-_]+fantasy\b/i,
+      /\burgent[\s-_]+fantasy\b/i,
+      /\burban[\s-_]+fantasy\b/i,
       /\bfantasy\b/i,
       /\bmagic(al)?\b/i,
       /\bfae\b/i,
       /\bfaerie[s]?\b/i,
       /\bwitch(es)?\b/i,
       /\bdragon[s]?\b/i,
+      /\bmytholog(y|ical)\b/i,
+      /\bfolklore\b/i,
     ],
   },
 
@@ -285,14 +285,17 @@ const GENRE_RULES: readonly GenreRule[] = [
   {
     genre: 'Sci-Fi & Dystopian',
     patterns: [
-      /\bscience\s+fiction\b/i,
-      /\bsci[- ]?fi\b/i,
+      /\bscience[\s-_]+fiction\b/i,
+      /\bsci[-_ ]?fi\b/i,
       /\bscifi\b/i,
       /\bdystop(ia|ian|ias)\b/i,
       /\bcyberpunk\b/i,
-      /\bspace\s+opera\b/i,
-      /\bpost[- ]apocalyptic\b/i,
-      /\btime\s+travel\b/i,
+      /\bspace[\s-_]+opera\b/i,
+      /\bpost[-_ ]apocalyptic\b/i,
+      /\btime[\s-_]+travel\b/i,
+      /\balien[s]?\b/i,
+      /\bsteampunk\b/i,
+      /\bapocalyptic\b/i,
     ],
   },
 
@@ -300,11 +303,13 @@ const GENRE_RULES: readonly GenreRule[] = [
   {
     genre: 'Romance',
     patterns: [
-      /\bcontemporary\s+romance\b/i,
-      /\blove\s+stor(y|ies)\b/i,
-      /\b(rom[- ]?com|romantic\s+comedy)\b/i,
+      /\bcontemporary[\s-_]+romance\b/i,
+      /\blove[\s-_]+stor(y|ies)\b/i,
+      /\b(rom[-_ ]?com|romantic[\s-_]+comedy)\b/i,
       /\bromance\b/i,
       /\bromantic\b/i,
+      /\bchick[\s-_]+lit\b/i,
+      /\bnew[\s-_]+adult\b/i,
     ],
   },
 
@@ -312,10 +317,11 @@ const GENRE_RULES: readonly GenreRule[] = [
   {
     genre: 'Young Adult',
     patterns: [
-      /\byoung\s+adult\b/i,
+      /\byoung[\s-_]+adult\b/i,
       /\bya\b/i,
       /\bteen[s]?\b/i,
-      /\bcoming\s+of\s+age\b/i,
+      /\bcoming[\s-_]+of[\s-_]+age\b/i,
+      /\bjuvenile\b/i,
     ],
   },
 
@@ -323,12 +329,16 @@ const GENRE_RULES: readonly GenreRule[] = [
   {
     genre: 'Historical Fiction',
     patterns: [
-      /\bhistorical\s+fiction\b/i,
+      /\bhistorical[\s-_]+fiction\b/i,
       /\bhistorical\b/i,
-      /\bperiod\s+drama\b/i,
+      /\bperiod[\s-_]+drama\b/i,
       /\bwwii\b/i,
-      /\bworld\s+war\s+(ii|2)\b/i,
+      /\bworld[\s-_]+war[\s-_]+(ii|2|1|i)\b/i,
       /\bvictorian\b/i,
+      /\bregency\b/i,
+      /\btudor\b/i,
+      /\bmedieval\b/i,
+      /\brenaissance\b/i,
     ],
   },
 
@@ -336,9 +346,10 @@ const GENRE_RULES: readonly GenreRule[] = [
   {
     genre: 'Classics',
     patterns: [
-      /\bclassic\s+literature\b/i,
-      /\bliterary\s+classics\b/i,
+      /\bclassic[\s-_]+literature\b/i,
+      /\bliterary[\s-_]+classics\b/i,
       /\bclassics\b/i,
+      /\bclassic\b/i,
     ],
   },
 
@@ -346,13 +357,17 @@ const GENRE_RULES: readonly GenreRule[] = [
   {
     genre: 'Thriller, Mystery & Crime',
     patterns: [
-      /\btrue\s+crime\b/i,
+      /\btrue[\s-_]+crime\b/i,
       /\bthriller[s]?\b/i,
       /\bmyster(y|ies)\b/i,
       /\bcrime\b/i,
       /\bsuspense\b/i,
       /\bdetective[s]?\b/i,
       /\bnoir\b/i,
+      /\bespionage\b/i,
+      /\bcozy[\s-_]+mystery\b/i,
+      /\bpsychological[\s-_]+thriller\b/i,
+      /\binvestigation\b/i,
     ],
   },
 
@@ -365,23 +380,29 @@ const GENRE_RULES: readonly GenreRule[] = [
       /\bsupernatural\b/i,
       /\bhaunted\b/i,
       /\bspooky\b/i,
+      /\boccult\b/i,
+      /\bparanormal(?![\s-_]+romance)\b/i,
+      /\bghost[s]?\b/i,
+      /\bvampire[s]?\b/i,
+      /\bzombie[s]?\b/i,
     ],
   },
 
   // 10. Non-Fiction, Bio & History
-  // Safeguards:
-  // - history does not match reading history / borrow history
-  // - science does not match "science fiction"
   {
     genre: 'Non-Fiction, Bio & History',
     patterns: [
-      /\bnon[- ]?fiction\b/i,
+      /\bnon[-_ ]?fiction\b/i,
       /\b(biograph(y|ies)|autobiograph(y|ies)|memoir[s]?)\b/i,
       /(?<!(reading|borrow|shelf|user|loan|checkout|account|purchase)[-_ ]+)\bhistory\b/i,
       /\bpsychology\b/i,
-      /\bself[- ]help\b/i,
-      /\bscience\b(?!\s*fiction)/i,
+      /\bself[-_ ]help\b/i,
+      /\bscience\b(?![\s-_]*fiction)/i,
       /\bphilosophy\b/i,
+      /\bpolitics\b/i,
+      /\beconomics\b/i,
+      /\bbusiness\b/i,
+      /\btrue[\s-_]+story\b/i,
     ],
   },
 
@@ -389,10 +410,23 @@ const GENRE_RULES: readonly GenreRule[] = [
   {
     genre: 'Graphic Novels, Manga',
     patterns: [
-      /\bgraphic\s+novel[s]?\b/i,
+      /\bgraphic[\s-_]+novel[s]?\b/i,
       /\bmanga\b/i,
       /\bcomic[s]?\b/i,
+      /\bcomic[\s-_]+book[s]?\b/i,
       /\bwebtoon[s]?\b/i,
+      /\bmanhwa\b/i,
+      /\bgraphic[\s-_]+memoir\b/i,
+    ],
+  },
+
+  // 12. Explicit Unassigned / Uncategorized tags
+  {
+    genre: 'Unassigned',
+    patterns: [
+      /\bunassigned\b/i,
+      /\buncategorized\b/i,
+      /\bno[-_ ]?genre\b/i,
     ],
   },
 ] as const;
@@ -401,42 +435,73 @@ const GENRE_RULES: readonly GenreRule[] = [
 // 5. MULTI-GENRE NORMALIZATION PIPELINE
 // ============================================================================
 
+export interface NormalizeGenreOptions {
+  /** If true (default), returns ['Unassigned'] when zero genres match */
+  fallbackToUnassigned?: boolean;
+}
+
 /**
  * Normalizes raw `subjects` (from Open Library API) and `categories` (from Google Books API)
- * into a deduplicated array of our exact 11 target genres (`MacroGenre[]`).
+ * into a deduplicated array of target genres (`MacroGenre[]`).
  *
  * Rules:
- * 1. Strict 11 Macro-Genres. Zero fallback category. "Other / Custom" does NOT exist.
- * 2. Multi-Genre Array: If multiple distinct signals exist, returns all matched MacroGenres.
+ * 1. Multi-Genre Array: If multiple distinct signals exist, returns all matched MacroGenres.
  *    Example 1: ["Fantasy", "Romance", "Magic", "Fae"] -> ['Fantasy', 'Romantasy', 'Romance']
  *    Example 2: ["Science Fiction", "Dystopian", "Classics"] -> ['Sci-Fi & Dystopian', 'Classics']
+ * 2. Unmapped subjects or empty API payloads return as extra category "Unassigned" so the user
+ *    can reassign the genre later.
  * 3. Deduplicated and canonically ordered.
- * 4. Zero fallback: If zero subjects match any target genre, returns an empty array `[]`.
  *
  * @param categories Google Books volumeInfo.categories, Open Library subjects, or single category string
- * @returns Array of deduplicated MacroGenres, or empty array [] if no match
+ * @param options Configuration options
+ * @returns Array of deduplicated MacroGenres (or ['Unassigned'] if no matches)
  */
 export function normalizeGenres(
-  categories?: readonly string[] | string[] | string | null
+  categories?: readonly string[] | string[] | string | null,
+  options?: NormalizeGenreOptions
 ): MacroGenre[] {
-  if (!categories) return [];
+  const fallbackToUnassigned = options?.fallbackToUnassigned ?? true;
 
-  // Flatten input into array of strings
-  let rawList: string[] = [];
+  if (!categories) {
+    return fallbackToUnassigned ? ['Unassigned'] : [];
+  }
+
+  const rawList: string[] = [];
+  const inputList: string[] = [];
+
   if (Array.isArray(categories)) {
-    rawList = categories.filter((c): c is string => typeof c === 'string' && c.trim().length > 0);
+    for (const c of categories) {
+      if (typeof c === 'string' && c.trim().length > 0) {
+        inputList.push(c.trim());
+      }
+    }
   } else if (typeof categories === 'string') {
     const trimmed = categories.trim();
-    if (!trimmed) return [];
-    // If separated by semicolon or comma (e.g. "Fantasy, Romance")
-    if (trimmed.includes(';') || (trimmed.includes(',') && !trimmed.includes('/'))) {
-      rawList = trimmed.split(/[;,]/).map((s) => s.trim()).filter(Boolean);
-    } else {
-      rawList = [trimmed];
+    if (trimmed.length > 0) {
+      inputList.push(trimmed);
     }
   }
 
-  if (rawList.length === 0) return [];
+  for (const item of inputList) {
+    // Strip Goodreads position markers like "fantasy (#1)" -> "fantasy"
+    const cleaned = item.replace(/\s*\(\s*#\d+\s*\)/g, '').trim();
+    if (!cleaned) continue;
+
+    // Split by comma or semicolon if not a hierarchical slash path like "Fiction / Historical"
+    if (cleaned.includes(';') || (cleaned.includes(',') && !cleaned.includes('/'))) {
+      const parts = cleaned
+        .split(/[;,]/)
+        .map((s) => s.replace(/\s*\(\s*#\d+\s*\)/g, '').trim())
+        .filter(Boolean);
+      rawList.push(...parts);
+    } else {
+      rawList.push(cleaned);
+    }
+  }
+
+  if (rawList.length === 0) {
+    return fallbackToUnassigned ? ['Unassigned'] : [];
+  }
 
   const matchedSet = new Set<MacroGenre>();
 
@@ -444,88 +509,93 @@ export function normalizeGenres(
     const clean = raw.trim();
     if (!clean) continue;
 
-    // 1. Noise Protection: ignore administrative tokens and history tracking noise
-    if (isNoiseToken(clean)) {
+    // Direct match for unassigned string (case-insensitive)
+    if (clean.toLowerCase() === 'unassigned') {
+      matchedSet.add('Unassigned');
       continue;
     }
 
-    // 2. Direct match if exact target MacroGenre
-    if (isMacroGenre(clean)) {
-      matchedSet.add(clean);
-    }
+    const tokensToTest = clean.includes('/')
+      ? [clean, ...clean.split('/').map((s) => s.trim()).filter(Boolean)]
+      : [clean];
 
-    // 3. Scan against keyword mapping dictionary
-    for (const rule of GENRE_RULES) {
-      for (const pattern of rule.patterns) {
-        if (pattern.test(clean)) {
-          matchedSet.add(rule.genre);
-          break; // move to next rule once this genre matches this string
+    for (const token of tokensToTest) {
+      // 1. Noise Protection
+      if (isNoiseToken(token)) {
+        continue;
+      }
+
+      // 2. Direct match
+      if (isMacroGenre(token)) {
+        matchedSet.add(token);
+      }
+
+      // 3. Scan against keyword mapping dictionary
+      for (const rule of GENRE_RULES) {
+        for (const pattern of rule.patterns) {
+          if (pattern.test(token)) {
+            matchedSet.add(rule.genre);
+            break;
+          }
         }
       }
     }
   }
 
-  // 4. Romantasy Synthesis:
-  // If distinct subject signals for Fantasy (or magic/fae) and Romance co-exist,
-  // ensure 'Romantasy' is included (as illustrated in Example 1).
+  // 4. Romantasy Synthesis (Example 1)
   if (matchedSet.has('Fantasy') && matchedSet.has('Romance')) {
     matchedSet.add('Romantasy');
   }
 
-  // 5. Canonical ordering (deterministic presentation)
+  // 5. If no target genre matched from the API payload, return ['Unassigned']
+  if (matchedSet.size === 0) {
+    return fallbackToUnassigned ? ['Unassigned'] : [];
+  }
+
+  // If specific target genres matched, exclude 'Unassigned' so it doesn't pollute concrete genres
+  if (matchedSet.size > 1 && matchedSet.has('Unassigned')) {
+    matchedSet.delete('Unassigned');
+  }
+
+  // 6. Return in deterministic canonical order
   return MACRO_GENRES.filter((g) => matchedSet.has(g));
 }
 
-export interface GenreExtractionOptions {
+export interface GenreExtractionOptions extends NormalizeGenreOptions {
   maxGenres?: number;
-  /** @deprecated Metadata string-scanning is removed; only official API categories/subjects are parsed */
+  /** @deprecated Metadata string-scanning is removed */
   title?: string;
-  /** @deprecated Metadata string-scanning is removed; only official API categories/subjects are parsed */
+  /** @deprecated Metadata string-scanning is removed */
   author?: string;
 }
 
-/**
- * Extracts all matching MacroGenres from official API category/subject strings.
- * Alias of `normalizeGenres`, supporting optional `maxGenres` limit.
- */
 export function extractGenres(
   categories?: readonly string[] | string[] | string | null,
   options?: GenreExtractionOptions
 ): MacroGenre[] {
-  const genres = normalizeGenres(categories);
+  const genres = normalizeGenres(categories, options);
   if (options?.maxGenres && genres.length > options.maxGenres) {
     return genres.slice(0, options.maxGenres);
   }
   return genres;
 }
 
-/**
- * Normalizes official publisher / library category strings into a single primary MacroGenre.
- * Provided for backwards compatibility with single-genre consumers.
- * Returns null if no match found (zero fallback bucket).
- */
 export function normalizeGenre(
-  categories?: readonly string[] | string[] | string | null
-): MacroGenre | null {
-  const genres = normalizeGenres(categories);
-  return genres.length > 0 ? genres[0] : null;
+  categories?: readonly string[] | string[] | string | null,
+  options?: NormalizeGenreOptions
+): MacroGenre {
+  const genres = normalizeGenres(categories, options);
+  return genres.length > 0 ? genres[0] : 'Unassigned';
 }
 
-/**
- * Extracts the single primary MacroGenre from official API categories/subjects.
- * Returns null if no match is found (zero fallback bucket).
- */
 export function extractPrimaryGenre(
   categories?: readonly string[] | string[] | string | null,
   options?: GenreExtractionOptions
-): MacroGenre | null {
+): MacroGenre {
   const genres = extractGenres(categories, options);
-  return genres.length > 0 ? genres[0] : null;
+  return genres.length > 0 ? genres[0] : 'Unassigned';
 }
 
-/**
- * Formats a list of MacroGenres into a clean display label (e.g. "Fantasy / Romantasy / Romance").
- */
 export function formatGenresLabel(genres: MacroGenre[]): string {
   if (!genres || genres.length === 0) return '';
   return genres.join(' / ');
@@ -623,19 +693,19 @@ export const API_GENRE_TEST_CASES: readonly MultiGenreTestCase[] = [
     expected: ['Graphic Novels, Manga'],
   },
   {
-    name: 'Non-matching generic category returns empty array (no fallback)',
+    name: 'Unmapped subjects return extra category "Unassigned"',
     categories: ['Fiction / General'],
-    expected: [],
+    expected: ['Unassigned'],
   },
   {
-    name: 'Empty categories array returns empty array (no fallback)',
+    name: 'Empty categories array returns "Unassigned"',
     categories: [],
-    expected: [],
+    expected: ['Unassigned'],
   },
   {
-    name: 'Metadata trap: standalone reading history returns empty array',
+    name: 'Metadata trap: standalone reading history returns "Unassigned"',
     categories: ['reading history', 'borrow_history'],
-    expected: [],
+    expected: ['Unassigned'],
   },
   {
     name: 'Ali Hazelwood with reading history metadata resolves strictly to Romance',
@@ -644,9 +714,6 @@ export const API_GENRE_TEST_CASES: readonly MultiGenreTestCase[] = [
   },
 ];
 
-/**
- * Runs internal verification against the test harness.
- */
 export function runGenreEngineSelfTest(): { passed: boolean; failures: string[] } {
   const failures: string[] = [];
 

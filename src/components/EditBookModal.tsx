@@ -63,7 +63,7 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
       setTotalPages(book.totalPages || 350);
       setStartDate(book.startDate || '');
       setFinishDate(book.finishDate || '');
-      setGenre(book.genre || 'Historical Fiction');
+      setGenre(book.genre || 'Unassigned');
       setFormat(book.format || 'Physical');
       setRating(book.rating || 4.0);
       setReview(book.review || '');
@@ -92,7 +92,7 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
       ppd,
       archetypeId: archetype.id,
       rating: snapToPrecision01(rating),
-      genre: genre.trim() || 'Historical Fiction',
+      genre: genre.trim() || 'Unassigned',
       format,
       review: review.trim(),
       coverUrl: coverUrl.trim() || undefined,

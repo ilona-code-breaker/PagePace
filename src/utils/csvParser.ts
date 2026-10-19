@@ -1,7 +1,7 @@
 import { BookEntry, ArchetypeId } from '../types/book';
 import { calculateElapsedDays, calculatePPD, getArchetypeByPPD, snapToPrecision01 } from './calculator';
-import { findExactOrBestMatch } from '../data/bookKnowledgeBase';
-import { extractGenres, formatGenresLabel, extractPrimaryGenre, MasterGenre } from './genreMapper';
+import { findExactOrBestMatch, getAuthorLandmarkGenre } from '../data/bookKnowledgeBase';
+import { extractGenres, formatGenresLabel, extractPrimaryGenre, MasterGenre, normalizeGenres } from './genreMapper';
 
 export interface CsvParseOptions {
   startDateStrategy: 'infer_date_added' | 'same_day' | 'estimate_pace';
@@ -195,9 +195,9 @@ export function cleanTitleString(title: string): string {
  * Normalizes and standardizes genres to clean MacroGenre title case.
  */
 export function normalizeStandardGenre(genre: string): string {
-  if (!genre || !genre.trim()) return '';
+  if (!genre || !genre.trim()) return 'Unassigned';
   const primary = extractPrimaryGenre(genre);
-  return primary || genre.trim();
+  return primary || 'Unassigned';
 }
 
 /**
@@ -284,10 +284,13 @@ export function verifyAndPopulateGenre(
   genreSources?: string | string[]
 ): string {
   // 1. Check internal knowledge base for verified match
-  const kbMatch = findExactOrBestMatch(title);
+  const kbMatch = findExactOrBestMatch(title, author);
   if (kbMatch && kbMatch.genre) {
-    const kbGenres = extractGenres(kbMatch.genre, { title, author });
-    return formatGenresLabel(kbGenres);
+    const kbGenres = extractGenres(kbMatch.genre, { title, author, fallbackToUnassigned: false });
+    const nonUnassigned = kbGenres.filter((g) => g !== 'Unassigned');
+    if (nonUnassigned.length > 0) {
+      return formatGenresLabel(nonUnassigned);
+    }
   }
 
   // 2. Parse strictly provided genre sources (bookshelves, shelves, user_tags, etc.)
@@ -298,12 +301,23 @@ export function verifyAndPopulateGenre(
     : [];
 
   if (sources.length > 0) {
-    const extracted = extractGenres(sources, { title, author });
-    return formatGenresLabel(extracted);
+    const extracted = extractGenres(sources, { title, author, fallbackToUnassigned: false });
+    const nonUnassigned = extracted.filter((g) => g !== 'Unassigned');
+    if (nonUnassigned.length > 0) {
+      return formatGenresLabel(nonUnassigned);
+    }
   }
 
-  // 3. If no structured match found, return empty string (zero fallback)
-  return '';
+  // 3. Check author landmark recognition (e.g. Ali Hazelwood -> Romance, etc.)
+  if (author) {
+    const authorGenre = getAuthorLandmarkGenre(author);
+    if (authorGenre) {
+      return authorGenre;
+    }
+  }
+
+  // 4. If no structured match found, return 'Unassigned'
+  return 'Unassigned';
 }
 
 /**
@@ -589,6 +603,9 @@ export function partitionDuplicates(
  * Converts a normalized CSV row into a persistent BookEntry.
  */
 export function convertRowToBookEntry(row: NormalizedCsvRow, index: number): BookEntry {
+  const parsedGenres = normalizeGenres(row.genre, { fallbackToUnassigned: false });
+  const validGenres = parsedGenres.filter((g) => g !== 'Unassigned');
+
   return {
     id: `csv-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 6)}`,
     title: row.title,
@@ -601,7 +618,8 @@ export function convertRowToBookEntry(row: NormalizedCsvRow, index: number): Boo
     archetypeId: row.archetypeId,
     rating: row.rating,
     review: row.review,
-    genre: row.genre,
+    genre: row.genre || 'Unassigned',
+    genres: validGenres.length > 0 ? validGenres : [row.genre as any || 'Unassigned'],
     format: 'Physical',
     coverUrl: row.isbn ? `https://covers.openlibrary.org/b/isbn/${row.isbn}-M.jpg` : undefined,
     isbn: row.isbn,

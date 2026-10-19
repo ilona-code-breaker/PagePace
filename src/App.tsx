@@ -147,6 +147,30 @@ export default function App() {
     }
   };
 
+  const handleDeleteBooks = (ids: string[]) => {
+    const idSet = new Set(ids);
+    setBooks((prev) => prev.filter((b) => !idSet.has(b.id)));
+    if (selectedBook && idSet.has(selectedBook.id)) {
+      setSelectedBook(null);
+    }
+  };
+
+  const handleClearLibrary = () => {
+    setBooks([]);
+    setSelectedBook(null);
+  };
+
+  const handleRestoreBooks = (booksToRestore: BookEntry[]) => {
+    setBooks((prev) => {
+      const existingIds = new Set(prev.map((b) => b.id));
+      const newItems = booksToRestore.filter((b) => !existingIds.has(b.id));
+      return [...newItems, ...prev];
+    });
+    if (booksToRestore.length > 0) {
+      setSelectedBook(booksToRestore[0]);
+    }
+  };
+
   const handleEditBook = (updatedBook: BookEntry) => {
     setBooks((prev) =>
       prev.map((b) => (b.id === updatedBook.id ? updatedBook : b))
@@ -522,6 +546,10 @@ export default function App() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               onDeleteBook={handleDeleteBook}
+              onDeleteBooks={handleDeleteBooks}
+              onClearLibrary={handleClearLibrary}
+              onRestoreBooks={handleRestoreBooks}
+              soundEnabled={soundEnabled}
               onAddBookClick={() => setCurrentTab('track')}
               onDataImported={handleDataImported}
               onOpenShareCard={() => setIsShareCardOpen(true)}

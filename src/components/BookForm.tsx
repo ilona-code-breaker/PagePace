@@ -106,9 +106,9 @@ export const BookForm: React.FC<BookFormProps> = ({
     setAuthor(book.author);
     if (book.genre) {
       const resolvedGenre = normalizeGenre(book.genre);
-      if (resolvedGenre) {
-        setGenre(resolvedGenre);
-      }
+      setGenre(resolvedGenre || 'Unassigned');
+    } else {
+      setGenre('Unassigned');
     }
     if (book.coverUrl) setCoverUrl(book.coverUrl);
     if (book.isbn) setIsbn(book.isbn);

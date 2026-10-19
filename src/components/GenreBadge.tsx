@@ -46,8 +46,9 @@ export const GenreBadge: React.FC<GenreBadgeProps> = ({
     };
   }, [isOpen]);
 
-  // Resolve metadata for the current genre or default to Historical Fiction
-  const meta = GENRE_METADATA[currentGenre as MacroGenre] || GENRE_METADATA['Historical Fiction'] || Object.values(GENRE_METADATA)[0];
+  // Resolve metadata for current genre (handles Unassigned and fallback)
+  const meta = GENRE_METADATA[currentGenre as MacroGenre] || GENRE_METADATA['Unassigned'] || Object.values(GENRE_METADATA)[0];
+  const isUnassigned = currentGenre === 'Unassigned' || !currentGenre;
 
   const handleSelect = (genre: MacroGenre, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -74,6 +75,8 @@ export const GenreBadge: React.FC<GenreBadgeProps> = ({
         className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium transition-all shadow-sm active:scale-95 ${
           isOpen
             ? 'ring-2 ring-amber-400/80 bg-stone-900 border-stone-700 text-stone-100'
+            : isUnassigned
+            ? 'bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:text-amber-200'
             : 'bg-stone-950/80 hover:bg-stone-900 border border-stone-800 hover:border-stone-700 text-stone-300 hover:text-stone-100'
         } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
         style={{
@@ -86,7 +89,9 @@ export const GenreBadge: React.FC<GenreBadgeProps> = ({
       >
         <Tag className="w-3 h-3 text-stone-400 group-hover:text-amber-400 transition-colors shrink-0" />
         <span className="text-[11px] shrink-0">{meta.emoji}</span>
-        <span className="truncate max-w-[170px] sm:max-w-[210px]">{currentGenre}</span>
+        <span className="truncate max-w-[170px] sm:max-w-[210px]">
+          {isUnassigned ? 'Unassigned (Assign)' : currentGenre}
+        </span>
         <ChevronDown
           className={`w-3 h-3 text-stone-500 group-hover:text-stone-300 transition-transform duration-200 shrink-0 ${
             isOpen ? 'rotate-180 text-amber-400' : ''
@@ -94,7 +99,7 @@ export const GenreBadge: React.FC<GenreBadgeProps> = ({
         />
       </button>
 
-      {/* Popover Dropdown of all 8 Macro-Genres */}
+      {/* Popover Dropdown of all Macro-Genres */}
       {isOpen && (
         <div
           className="absolute left-0 mt-1.5 w-64 sm:w-72 rounded-2xl bg-stone-950/95 border border-stone-800 shadow-2xl backdrop-blur-md p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-left"
@@ -102,7 +107,7 @@ export const GenreBadge: React.FC<GenreBadgeProps> = ({
         >
           <div className="px-3 py-1.5 border-b border-stone-800/80 flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-stone-400">
             <span>Reassign Genre</span>
-            <span className="text-amber-400 font-semibold">8 Pillars</span>
+            <span className="text-amber-400 font-semibold">{MACRO_GENRES.length} Categories</span>
           </div>
 
           <div className="py-1 max-h-72 overflow-y-auto space-y-0.5 custom-scrollbar">

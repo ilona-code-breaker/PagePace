@@ -5,8 +5,8 @@
  * enriches them via fetchGenreByMetadata in rate-limited batches with progress reporting.
  */
 
-import { MasterGenre, isMasterGenre } from './genreMapper';
-import { fetchGenreByMetadata } from './genreApi';
+import { MasterGenre, isMacroGenre } from './genreMapper';
+import { fetchGenreByMetadata, fetchGenresByMetadata } from './genreApi';
 
 /**
  * Minimal book interface contract required for genre enrichment.
@@ -17,6 +17,7 @@ export interface EnrichableBook {
   author?: string;
   isbn?: string;
   genre?: string;
+  genres?: MasterGenre[];
   [key: string]: any;
 }
 
@@ -70,19 +71,25 @@ export interface EnrichCsvResult<T extends EnrichableBook> {
 
 /**
  * Helper to determine whether a genre string is considered blank, generic, or uninformative.
+ * Correctly marks 'Unassigned' as requiring API enrichment.
  */
 export function isGenericOrEmptyGenre(genre?: string): boolean {
   if (!genre) return true;
   const clean = genre.trim().toLowerCase();
   return (
     clean === '' ||
+    clean === 'unassigned' ||
     clean === 'fiction' ||
     clean === 'general fiction' ||
     clean === 'uncategorized' ||
     clean === 'unknown' ||
     clean === 'books' ||
     clean === 'read' ||
-    clean === 'novel'
+    clean === 'novel' ||
+    clean === 'other' ||
+    clean === 'none' ||
+    genre === 'Unassigned' ||
+    !isMacroGenre(genre)
   );
 }
 
@@ -187,32 +194,34 @@ export async function enrichCsvGenres<T extends EnrichableBook>(
     const batchPromises = currentBatchIndices.map(async (bookIdx) => {
       const originalBook = books[bookIdx];
       try {
-        const resolvedGenre: MasterGenre | null = await fetchGenreByMetadata(
+        const resolvedGenres: MasterGenre[] = await fetchGenresByMetadata(
           originalBook.title,
           originalBook.author || '',
           originalBook.isbn
         );
 
-        if (resolvedGenre) {
-          const wasUpdated = isGenericOrEmptyGenre(originalBook.genre) || resolvedGenre !== originalBook.genre;
-          if (wasUpdated) {
-            enrichedCount++;
-          }
+        const validGenres = resolvedGenres.filter((g) => g !== 'Unassigned');
+
+        if (validGenres.length > 0) {
+          enrichedCount++;
           result[bookIdx] = {
             ...originalBook,
-            genre: resolvedGenre,
+            genre: validGenres[0],
+            genres: validGenres,
           };
         } else {
           result[bookIdx] = {
             ...originalBook,
-            genre: originalBook.genre?.trim() || '',
+            genre: originalBook.genre?.trim() || 'Unassigned',
+            genres: originalBook.genres || [originalBook.genre as MasterGenre || 'Unassigned'],
           };
         }
       } catch {
         // Fallback gracefully on item error
         result[bookIdx] = {
           ...originalBook,
-          genre: originalBook.genre?.trim() || '',
+          genre: originalBook.genre?.trim() || 'Unassigned',
+          genres: originalBook.genres || [originalBook.genre as MasterGenre || 'Unassigned'],
         };
       } finally {
         processedCount++;

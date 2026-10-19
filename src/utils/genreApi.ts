@@ -12,6 +12,7 @@
  */
 
 import { MasterGenre, normalizeGenre, normalizeGenres } from './genreMapper';
+import { findExactOrBestMatch, getAuthorLandmarkGenre } from '../data/bookKnowledgeBase';
 
 /**
  * In-memory cache for resolved primary genres to eliminate duplicate API round-trips
@@ -100,11 +101,12 @@ export async function fetchGenresByMetadata(
           }
         }
         if (allCategories.length > 0) {
-          const resolved = normalizeGenres(allCategories);
-          if (resolved.length > 0) {
-            multiGenreCache.set(cacheKey, resolved);
-            genreCache.set(cacheKey, resolved[0]);
-            return resolved;
+          const resolved = normalizeGenres(allCategories, { fallbackToUnassigned: false });
+          const nonUnassigned = resolved.filter((g) => g !== 'Unassigned');
+          if (nonUnassigned.length > 0) {
+            multiGenreCache.set(cacheKey, nonUnassigned);
+            genreCache.set(cacheKey, nonUnassigned[0]);
+            return nonUnassigned;
           }
         }
       }
@@ -113,15 +115,15 @@ export async function fetchGenresByMetadata(
     // Network failure, timeout, or rate-limiting; proceed to Open Library subjects fallback
   }
 
-  // 3. Fallback: Open Library API - Target official subjects array ONLY
+  // 3. Fallback: Open Library API - Target official subjects array & works subjects
   try {
     const olQuery = cleanIsbn
       ? `isbn=${encodeURIComponent(cleanIsbn)}`
       : `q=${encodeURIComponent(`${cleanTitle} ${author}`.trim())}`;
-    const openLibUrl = `https://openlibrary.org/search.json?${olQuery}&fields=title,author_name,subject,subject_facet&limit=2`;
+    const openLibUrl = `https://openlibrary.org/search.json?${olQuery}&fields=title,author_name,subject,subject_facet,key,isbn&limit=2`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
 
     const olResponse = await fetch(openLibUrl, {
       signal: controller.signal,
@@ -136,17 +138,39 @@ export async function fetchGenresByMetadata(
       const olData = await olResponse.json();
       if (Array.isArray(olData.docs) && olData.docs.length > 0) {
         const doc = olData.docs[0];
-        const rawSubjects: string[] = [
+        let rawSubjects: string[] = [
           ...(doc.subject || []),
           ...(doc.subject_facet || []),
         ];
 
+        // If search results omitted subjects, query the work object directly
+        if (rawSubjects.length === 0 && doc.key) {
+          try {
+            const wController = new AbortController();
+            const wTimeout = setTimeout(() => wController.abort(), 3500);
+            const wRes = await fetch(`https://openlibrary.org${doc.key}.json`, {
+              signal: wController.signal,
+              headers: { Accept: 'application/json' },
+            });
+            clearTimeout(wTimeout);
+            if (wRes.ok) {
+              const wData = await wRes.json();
+              if (Array.isArray(wData.subjects)) {
+                rawSubjects = wData.subjects;
+              }
+            }
+          } catch {
+            // work fetch fallback
+          }
+        }
+
         if (rawSubjects.length > 0) {
-          const resolved = normalizeGenres(rawSubjects);
-          if (resolved.length > 0) {
-            multiGenreCache.set(cacheKey, resolved);
-            genreCache.set(cacheKey, resolved[0]);
-            return resolved;
+          const resolved = normalizeGenres(rawSubjects, { fallbackToUnassigned: false });
+          const nonUnassigned = resolved.filter((g) => g !== 'Unassigned');
+          if (nonUnassigned.length > 0) {
+            multiGenreCache.set(cacheKey, nonUnassigned);
+            genreCache.set(cacheKey, nonUnassigned[0]);
+            return nonUnassigned;
           }
         }
       }
@@ -155,37 +179,94 @@ export async function fetchGenresByMetadata(
     // Gracefully handle Open Library error
   }
 
-  // 4. No match found: return empty array to isolate missing/unmatched metadata (zero fallback)
-  multiGenreCache.set(cacheKey, []);
-  genreCache.set(cacheKey, null);
-  return [];
+  // 4. Secondary Open Library ISBN lookup if available
+  if (cleanIsbn) {
+    try {
+      const isbnController = new AbortController();
+      const isbnTimeout = setTimeout(() => isbnController.abort(), 3500);
+      const isbnRes = await fetch(`https://openlibrary.org/isbn/${cleanIsbn}.json`, {
+        signal: isbnController.signal,
+        headers: { Accept: 'application/json' },
+      });
+      clearTimeout(isbnTimeout);
+      if (isbnRes.ok) {
+        const isbnData = await isbnRes.json();
+        let isbnSubjects: string[] = Array.isArray(isbnData.subjects) ? isbnData.subjects : [];
+        if (isbnSubjects.length === 0 && Array.isArray(isbnData.works) && isbnData.works[0]?.key) {
+          const wRes = await fetch(`https://openlibrary.org${isbnData.works[0].key}.json`);
+          if (wRes.ok) {
+            const wData = await wRes.json();
+            if (Array.isArray(wData.subjects)) isbnSubjects = wData.subjects;
+          }
+        }
+        if (isbnSubjects.length > 0) {
+          const resolved = normalizeGenres(isbnSubjects, { fallbackToUnassigned: false });
+          const nonUnassigned = resolved.filter((g) => g !== 'Unassigned');
+          if (nonUnassigned.length > 0) {
+            multiGenreCache.set(cacheKey, nonUnassigned);
+            genreCache.set(cacheKey, nonUnassigned[0]);
+            return nonUnassigned;
+          }
+        }
+      }
+    } catch {
+      // ISBN fetch fallback
+    }
+  }
+
+  // 5. Knowledge Base & Landmark Author Fallback
+  const kbMatch = findExactOrBestMatch(cleanTitle, author);
+  if (kbMatch && kbMatch.genre) {
+    const resolved = normalizeGenres(kbMatch.genre, { fallbackToUnassigned: false });
+    const nonUnassigned = resolved.filter((g) => g !== 'Unassigned');
+    if (nonUnassigned.length > 0) {
+      multiGenreCache.set(cacheKey, nonUnassigned);
+      genreCache.set(cacheKey, nonUnassigned[0]);
+      return nonUnassigned;
+    }
+  }
+
+  if (author) {
+    const authorGenre = getAuthorLandmarkGenre(author);
+    if (authorGenre) {
+      const resolved = [authorGenre as MasterGenre];
+      multiGenreCache.set(cacheKey, resolved);
+      genreCache.set(cacheKey, resolved[0]);
+      return resolved;
+    }
+  }
+
+  // 6. No match found: return ['Unassigned'] so user can reassign genre later
+  multiGenreCache.set(cacheKey, ['Unassigned']);
+  genreCache.set(cacheKey, 'Unassigned');
+  return ['Unassigned'];
 }
 
 /**
  * Queries Google Books API for publisher categories (`volumeInfo.categories`) and normalizes
  * them into a single primary MacroGenre.
  * Falls back to Open Library subjects (`subjects` / `subject`) if Google Books categories are empty.
- * Returns null if no match is found (zero fallback bucket).
+ * Returns 'Unassigned' if no match is found so the user can reassign genre later.
  */
 export async function fetchGenreByMetadata(
   title: string,
   author = '',
   isbn?: string
-): Promise<MasterGenre | null> {
+): Promise<MasterGenre> {
   const cleanTitle = (title || '').trim();
   if (!cleanTitle) {
-    return null;
+    return 'Unassigned';
   }
 
   const cleanIsbn = sanitizeIsbn(isbn);
   const cacheKey = getCacheKey(cleanTitle, author, cleanIsbn);
 
   if (genreCache.has(cacheKey)) {
-    return genreCache.get(cacheKey) ?? null;
+    return genreCache.get(cacheKey) ?? 'Unassigned';
   }
 
   const genres = await fetchGenresByMetadata(cleanTitle, author, isbn);
-  return genres.length > 0 ? genres[0] : null;
+  return genres.length > 0 ? genres[0] : 'Unassigned';
 }
 
 /**
