@@ -3,6 +3,7 @@ export interface ApiBookMetadata {
   author: string;
   totalPages: number;
   genre: string;
+  genres?: string[];
   coverUrl?: string;
   isbn?: string;
   publishedYear?: number;
@@ -11,7 +12,7 @@ export interface ApiBookMetadata {
   description?: string;
 }
 
-import { normalizeGenre } from '../utils/genreMapper';
+import { normalizeGenre, normalizeGenres } from '../utils/genreMapper';
 
 /**
  * Checks if input is an ISBN (10 or 13 digits, optionally with dashes).
@@ -73,11 +74,15 @@ export async function searchGoogleBooks(query: string): Promise<ApiBookMetadata[
         if (!isNaN(year)) publishedYear = year;
       }
 
+      const normalizedGenres = normalizeGenres(info.categories, { fallbackToUnassigned: false });
+      const nonUnassigned = normalizedGenres.filter((g) => g !== 'Unassigned');
+
       return {
         title: info.title || 'Untitled',
         author: authors,
         totalPages: Math.max(10, pageCount),
-        genre: normalizeGenre(info.categories) || 'Unassigned',
+        genre: nonUnassigned[0] || 'Unassigned',
+        genres: nonUnassigned,
         coverUrl,
         isbn,
         publishedYear,
@@ -132,11 +137,15 @@ export async function searchOpenLibrary(query: string): Promise<ApiBookMetadata[
         coverUrl = `https://covers.openlibrary.org/b/isbn/${doc.isbn[0]}-M.jpg`;
       }
 
+      const normalizedGenres = normalizeGenres(doc.subject, { fallbackToUnassigned: false });
+      const nonUnassigned = normalizedGenres.filter((g) => g !== 'Unassigned');
+
       return {
         title: doc.title || 'Untitled',
         author: authors,
         totalPages: Math.max(10, pageCount),
-        genre: normalizeGenre(doc.subject) || 'Unassigned',
+        genre: nonUnassigned[0] || 'Unassigned',
+        genres: nonUnassigned,
         coverUrl,
         isbn: Array.isArray(doc.isbn) ? doc.isbn[0] : undefined,
         publishedYear: doc.first_publish_year,
